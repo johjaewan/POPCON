@@ -17,6 +17,10 @@ public class UserService {
         User user = new User();
         BeanUtils.copyProperties(createuserDto, user, "hash");// 해시값은 무시하고 복사
         user.setHash(user.hashCode());// 해시값 설정// 이거 위줄 아래줄 순서가 바뀌어서 아무것도 없는 값을 조합해서 해시가 이상하게 뜸
+        System.out.println(user.getEmail());
+        System.out.println(user.getSocial());
+        System.out.println(user.getHash());
+        System.out.println(user.hashCode());
         return userRepository.save(user);
     }
     public void deleteUser(DeleteUserDto deleteUserDto){

@@ -37,6 +37,8 @@ public class GifticonService {
         user.setEmail(email);
         user.setSocial(social);
         int hash = user.hashCode();
+        System.out.println(user.getEmail());
+        System.out.println(user.getSocial());
         System.out.println(hash);
         return gifticonRepository.findByUser_Hash(hash, Sort.by(asc("due")));
     }

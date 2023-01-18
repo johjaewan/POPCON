@@ -17,6 +17,8 @@ public class UserController {
 
     @PostMapping("/user/kakao-login") // 회원 정보 DB에 저장(카카오)
     public ResponseEntity<User> createUserK(@RequestBody CreateUserDto createUserDto){
+        System.out.println(createUserDto.getEmail());
+        System.out.println(createUserDto.getSocial());
         return ResponseEntity.ok(userservice.CreateUser(createUserDto));
     }
     @PostMapping("/user/naver-login") // 회원 정보 DB에 저장(네이버)
