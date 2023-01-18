@@ -7,6 +7,7 @@ public class CreateUserDto {
 
     private String email;
     private String social;
+    private String Token;
     private int alarm;
     private int Nday;
     private int term;

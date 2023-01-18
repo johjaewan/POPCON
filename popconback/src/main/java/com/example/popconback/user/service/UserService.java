@@ -1,5 +1,6 @@
 package com.example.popconback.user.service;
 
+import com.example.popconback.gifticon.domain.Gifticon;
 import com.example.popconback.user.domain.User;
 import com.example.popconback.user.dto.CreateUserDto;
 import com.example.popconback.user.dto.DeleteUserDto;
@@ -7,6 +8,10 @@ import com.example.popconback.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
+
+import javax.persistence.EntityNotFoundException;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -23,8 +28,24 @@ public class UserService {
         System.out.println(user.hashCode());
         return userRepository.save(user);
     }
+
+    public User updateUser(CreateUserDto createUserDto,int hash){
+        Optional<User> optionalUser = userRepository.findById(hash);
+
+        if (!optionalUser.isPresent()){
+            throw new EntityNotFoundException("User not present in the database");
+        }
+        User user = optionalUser.get();
+        BeanUtils.copyProperties(createUserDto, user,"hash");
+        return userRepository.save(user);
+    }
+
     public void deleteUser(DeleteUserDto deleteUserDto){
         userRepository.deleteById(deleteUserDto.hashCode());
+    }
+
+    public List<User> getAllUser(){
+        return userRepository.findAll();
     }
 
 }
