@@ -23,7 +23,7 @@ public class GifticonController {
     private final GifticonService gifticonService;
     @GetMapping("/gifticon/{email}/{social}") //유저의 기프티콘 정보 DB에서 보내주기
     public ResponseEntity<List<Gifticon>> gifticonList(@PathVariable String email, @PathVariable String social){
-            return ResponseEntity.ok(gifticonService.gifticonList(email, social));
+        return ResponseEntity.ok(gifticonService.gifticonList(email, social));
     }
 
     @PostMapping("/gifticon") //기프티콘 정보 저장
