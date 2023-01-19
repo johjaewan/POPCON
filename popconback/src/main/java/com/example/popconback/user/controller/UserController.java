@@ -25,10 +25,6 @@ public class UserController {
     public ResponseEntity<User> createUserN(@RequestBody CreateUserDto createUserDto){
         return ResponseEntity.ok(userservice.CreateUser(createUserDto));
     }
-    @PostMapping("/user/update/{hash}")
-    public ResponseEntity<User> updateUser(@RequestBody CreateUserDto createUserDto, @PathVariable int hash){
-        return ResponseEntity.ok(userservice.updateUser(createUserDto,hash));
-    }
     @DeleteMapping("/user/withdrawal") //회원 탈퇴
     public ResponseEntity<Void> deleteUser(@RequestBody DeleteUserDto deleteUserDto){
         userservice.deleteUser(deleteUserDto);
