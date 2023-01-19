@@ -6,6 +6,7 @@ import com.example.popconback.gifticon.dto.CreateBookmarkDto;
 import com.example.popconback.gifticon.dto.CreateGifticonDto;
 import com.example.popconback.gifticon.dto.SortGifticonDto;
 import com.example.popconback.gifticon.service.GifticonService;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -21,9 +22,9 @@ import java.util.List;
 public class GifticonController {
 
     private final GifticonService gifticonService;
-    @GetMapping("/gifticon/{email}/{social}") //유저의 기프티콘 정보 DB에서 보내주기
+    @GetMapping("/gifticon/{email}/{social}") //유저의 기프티콘 정보 DB에서 보내주기 // 이것도 만료되거나 사용한거 다보낼까?
     public ResponseEntity<List<Gifticon>> gifticonList(@PathVariable String email, @PathVariable String social){
-            return ResponseEntity.ok(gifticonService.gifticonList(email, social));
+        return ResponseEntity.ok(gifticonService.gifticonList(email, social));
     }
 
     @PostMapping("/gifticon") //기프티콘 정보 저장
@@ -42,7 +43,7 @@ public class GifticonController {
         return ResponseEntity.ok().build();
     }
 
-   @PostMapping("/gifticon_brand") //기프티콘 브랜드별 정렬
+   @PostMapping("/gifticon_brand") //기프티콘 브랜드별 정렬 // 사용한거 표시 제외하고 보낼지 말지 고민
    public ResponseEntity<List<Gifticon>> SortGifticon (@RequestBody SortGifticonDto sortGifticonDto){
         return ResponseEntity.ok(gifticonService.sortGifticon(sortGifticonDto));
    }
@@ -58,6 +59,11 @@ public class GifticonController {
         return ResponseEntity.ok().build();
     }
 
+    //@Scheduled(cron = "0 0 09 * * ?")
+    @GetMapping("gifticon/checkOver")// 유효기간 지난거 상태 변경
+    public void Check_Overdate () {
+        gifticonService.check_overdate();
+    }
 
 
 
