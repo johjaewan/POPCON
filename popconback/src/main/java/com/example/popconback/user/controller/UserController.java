@@ -1,10 +1,12 @@
 package com.example.popconback.user.controller;
 
+
 import com.example.popconback.user.domain.User;
 import com.example.popconback.user.dto.CreateUserDto;
 import com.example.popconback.user.dto.DeleteUserDto;
 import com.example.popconback.user.service.UserService;
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,7 +25,7 @@ public class UserController {
     public ResponseEntity<User> createUserN(@RequestBody CreateUserDto createUserDto){
         return ResponseEntity.ok(userservice.CreateUser(createUserDto));
     }
-    @PostMapping("/user/update/{hash}")
+    @PostMapping("/user/update/{hash}")// 회원 정보 수정
     public ResponseEntity<User> updateUser(@RequestBody CreateUserDto createUserDto, @PathVariable int hash){
         return ResponseEntity.ok(userservice.updateUser(createUserDto,hash));
     }
@@ -32,6 +34,8 @@ public class UserController {
         userservice.deleteUser(deleteUserDto);
         return ResponseEntity.ok().build();
     }
+
+
 
     //@GET("/notification") 푸시 알림 정보
 

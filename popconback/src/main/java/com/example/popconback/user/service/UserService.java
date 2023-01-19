@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
+import javax.persistence.EntityExistsException;
 import javax.persistence.EntityNotFoundException;
 import java.util.List;
 import java.util.Optional;
@@ -22,6 +23,12 @@ public class UserService {
         User user = new User();
         BeanUtils.copyProperties(createuserDto, user, "hash");// 해시값은 무시하고 복사
         user.setHash(user.hashCode());// 해시값 설정// 이거 위줄 아래줄 순서가 바뀌어서 아무것도 없는 값을 조합해서 해시가 이상하게 뜸
+        Optional<User> optionalUser = userRepository.findById(user.hashCode());
+        if(optionalUser.isPresent()){
+            User failsave = new User();
+            failsave.setEmail(null);
+            return failsave;
+        }
         return userRepository.save(user);
     }
 
