@@ -2,11 +2,9 @@ package com.example.popconback.gifticon.controller;
 
 import com.example.popconback.gifticon.domain.GifticonFiles;
 import com.example.popconback.gifticon.service.GifticonFilesService;
-import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,8 +16,11 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.io.*;
-import java.nio.file.*;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 @RestController
@@ -29,60 +30,62 @@ public class GifticonFilesController {
     @Autowired
     GifticonFilesService gifticonFilesService;
     @PostMapping("/mobile/upload.do")
-    public String upload(@RequestParam("multipartFiles") List<MultipartFile> multipartFiles) throws IOException, UncheckedIOException {
+    public String upload(@RequestParam("multipartFiles") List<MultipartFile> multipartFiles) throws Exception {
         System.out.println("multipartFiles.size():"+multipartFiles.size());
 
-        // 내가 업로드 파일을 저장할 경로
-        String uploadFolder = "C:\\upload";
-
-        Path directoryPath = Paths.get("C:\\upload");
-
-        try {
-            // 디렉토리 생성
-            Files.createDirectory(directoryPath);
-
-            System.out.println(directoryPath + " 디렉토리가 생성되었습니다.");
-
-        } catch (FileAlreadyExistsException e) {
-            System.out.println("디렉토리가 이미 존재합니다");
-        } catch (NoSuchFileException e) {
-            System.out.println("디렉토리 경로가 존재하지 않습니다");
-        }catch (IOException e) {
-            e.printStackTrace();
-        }
-
-
         for (MultipartFile multipartFile : multipartFiles) {
-            String uploadFileName = multipartFile.getOriginalFilename();
-            // 저장할 파일, 생성자로 경로와 이름을 지정해줌.
-            File saveFile = new File(uploadFolder, uploadFileName);
+            BufferedImage image = ImageIO.read(multipartFile.getInputStream());
 
-            try {
-                // 업로드한 파일 데이터를 지정한 파일에 저장
-                multipartFile.transferTo(saveFile);
-
-                String filename = multipartFile.getOriginalFilename();
-
-                // DB에 파일명 저장
-                gifticonFile.setFileName(filename);
-                gifticonFilesService.save(gifticonFile);
-
-            } catch (Exception e) {
-                e.printStackTrace();
+            String[] array = multipartFile.getContentType().split("/");
+            for(String data: array) {
+                System.out.println("array : "+data);
             }
+            String filename = multipartFile.getOriginalFilename();
+
+            gifticonFile.setFileName(filename);
+            gifticonFilesService.save(gifticonFile);
+
+            String temp_path = "C:/upload"; //폴더 경로
+            File Folder = new File(temp_path);
+
+            // 해당 디렉토리가 없다면 디렉토리를 생성.
+            if (!Folder.exists()) {
+                try{
+                    Folder.mkdir(); //폴더 생성합니다. ("새폴더"만 생성)
+                    System.out.println("폴더가 생성완료.");
+                }
+                catch(Exception e){
+                    e.getStackTrace();
+                }
+            }else {
+                System.out.println("폴더가 이미 존재합니다..");
+            }
+
+
+
+            System.out.println("filename:"+filename);
+            String path = "C:/upload/" + filename;
+            File outputFile = new File(path);
+            ImageIO.write(image,"jpg",outputFile);
         }
         return "success";
     }
-
-    @GetMapping(value="/mobile/download.do", produces = MediaType.IMAGE_JPEG_VALUE)
-    public ResponseEntity<byte[]> download(@RequestParam("filename") String filename) throws IOException {
+    @GetMapping(value="/mobile/download.do")
+    public ResponseEntity<ByteArrayResource> download(@RequestParam("filename") String filename) throws IOException {
         System.out.println("download:"+filename);
 
-        InputStream imageStream = new FileInputStream("C:\\upload\\" + filename);
-        byte[] imageByteArray = IOUtils.toByteArray(imageStream); // byte[] 형태의 값으로 incoding 후 반환
-        imageStream.close();
-        return new ResponseEntity<byte[]>(imageByteArray, HttpStatus.OK);
+        Path path = Paths.get("C:/upload/"+filename);
+        byte[] data = Files.readAllBytes(path);
+        ByteArrayResource resource = new ByteArrayResource(data);
 
+        return ResponseEntity.ok()
+                // Content-Disposition
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + path.getFileName().toString())
+                // Content-Type
+                .contentType(MediaType.parseMediaType("upload/jpeg")) //
+                // Content-Lengh
+                .contentLength(data.length) //
+                .body(resource);
     }
 
 }
