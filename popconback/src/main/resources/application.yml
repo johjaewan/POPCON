@@ -3,7 +3,6 @@ spring:
     url: jdbc:mariadb://127.0.0.1:3306/popcon
     username: root
     password: ssafy
-
   jpa:
     hibernate:
       ddl-auto: update
@@ -11,7 +10,8 @@ spring:
     generate-ddl: true
   profiles:
     include: API-KEY
-  cloud:
-    gcp:
-      credentials:
-        location: classpath:coral-sum-368108-cd6003507664.json
+server :
+  error :
+    include-exception: false      # Response 에 Exception 을 표시할지
+    include-message: always      # Response 에 Exception Message 를 표시할지 (never | always | on_param)
+    include-stacktrace: never

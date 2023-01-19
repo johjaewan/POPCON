@@ -17,9 +17,13 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import javax.persistence.EntityNotFoundException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
+import static java.time.LocalTime.now;
 import static org.springframework.data.domain.Sort.Order.asc;
 import static org.springframework.data.domain.Sort.Order.desc;
 
@@ -29,7 +33,6 @@ public class GifticonService {
     private final GifticonRepository gifticonRepository;
     private final UserRepository userRepository;
     private final Brandrepository brandrepository;
-
     private final Bookmarkrepository bookmarkrepository;
 
     public List<Gifticon> gifticonList (String email, String social){
@@ -37,8 +40,6 @@ public class GifticonService {
         user.setEmail(email);
         user.setSocial(social);
         int hash = user.hashCode();
-        System.out.println(user.getEmail());
-        System.out.println(user.getSocial());
         System.out.println(hash);
         return gifticonRepository.findByUser_Hash(hash, Sort.by(asc("due")));
     }
@@ -63,6 +64,7 @@ public class GifticonService {
         gifticon.setBrand(brand.get());
         return gifticonRepository.save(gifticon);
     }
+
 
     public List<Gifticon> sortGifticon (SortGifticonDto sortGifticonDto){
         Optional<User> user = userRepository.findById(sortGifticonDto.getHash());
@@ -127,6 +129,20 @@ public class GifticonService {
         int hash = createBookmarkDto.getHash();
         String brand_name = createBookmarkDto.getBrandName();
         bookmarkrepository.deleteByUser_HashAndBrand_BrandName(hash, brand_name);
+    }
+
+    public List<Gifticon> getPushGifticon (int hash, int Dday){// 사용한 기프티콘이나 기간지난거는 스테이트로 구분 하면 되는
+        Date date = java.sql.Date.valueOf(LocalDate.now().plusDays(Dday));
+        return gifticonRepository.findByUser_HashAndDueLessThanEqualAndState(hash, date,1);
+    }
+
+    public void check_overdate(){
+        Date date =java.sql.Date.valueOf(LocalDate.now());
+        List <Gifticon> list = gifticonRepository.findByDueAndState(date,1);
+        for (Gifticon gifticon: list) {
+            gifticon.setState(0);
+            gifticonRepository.save(gifticon);
+        }
     }
 
 }

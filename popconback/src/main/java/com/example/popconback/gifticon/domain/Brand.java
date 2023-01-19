@@ -16,7 +16,9 @@ public class Brand {
     @Id
     private String brandName;
 
-    private String brandImg;
+//    @OneToOne
+//    @JoinColumn(name="brand_img_filename")
+//    private Files brandImg;
 
     @JsonBackReference
     @OneToMany(mappedBy = "brand", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
