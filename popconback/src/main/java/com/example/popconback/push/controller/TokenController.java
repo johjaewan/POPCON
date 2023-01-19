@@ -69,41 +69,29 @@ public class TokenController {
 
     public void pushmessage(int timezone) throws IOException{
         List<User> U_list = userService.getAllUser();
-        System.out.println(LocalDate.now()+"hi");
         for (User user : U_list) {
             if(user.getAlarm() == 0 || user.getTimezone() != timezone) {// 알람 설정 안한 사람은 스킵 시간대 아니면 스킵 아침 0 점심 1 저녁 2
-                System.out.println("adsasdf");
                 continue;
             }
-            System.out.println("dddddddddddddd"+user.getHash());
+
             int hash = user.getHash();
             int Dday = user.getNday();
             String Token = user.getToken();
-            List<Gifticon> list = gifticonService.getPushGifticon(hash, Dday);
-            System.out.println(list.size());
-            for (Gifticon gftt: list) {
-                System.out.println(gftt.getBarcode_num());
-                System.out.println(gftt.getDue());
-            }
-            //System.out.println(list.size());
+            List<Gifticon> list = gifticonService.getPushGifticon(hash, Dday);// 설정한 알림 기간에 해당하는 기프티콘 리스트
+
 
             for (Gifticon gifticon : list) {
-                Date date = java.sql.Date.valueOf(LocalDate.now().plusDays(Dday));
-                Date Ddate = gifticon.getDue();
-                long diffsec = (date.getTime() - Ddate.getTime())/1000;
-                long diffday = diffsec/(24*60*60);
-                if(diffday%user.getTerm() == 0){
-                    System.out.println(user.getTerm());
-                    System.out.println(diffday);
-                    System.out.println(gifticon.getBarcode_num());
-                    System.out.println(gifticon.getDue());
+                Date date = java.sql.Date.valueOf(LocalDate.now().plusDays(Dday));//오늘 날짜에 알람설정 일 수를 더하고
+                Date Ddate = gifticon.getDue();// 사용 기간을 구하고
+                long diffsec = (date.getTime() - Ddate.getTime())/1000;// 둘의 차이를 뺀다
+                long diffday = diffsec/(24*60*60);// 얼만큼 지나갔는지 확인하기 위해서 일 수를 구하고
+                if(diffday%user.getTerm() == 0){// 해당 일수를 알람 주기로 나눠서 나머지가 0이면 해당되는 날에 알림을 보낸다.
+
                     //service.sendMessageTo(Token, "유효기간 임박한 기프티콘 있어요", "빨리쓰세요");
                     //break;// 문자 여러개 보낼 필요 없으니까
                 }
             }
-//            if(list.size() != 0){
-//                service.sendMessageTo(Token, "유효기간 임박한 기프티콘 있어요", "빨리쓰세요");
-//            }
+//
         }
 
     }

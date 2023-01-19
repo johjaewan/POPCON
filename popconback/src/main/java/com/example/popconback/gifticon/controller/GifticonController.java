@@ -6,6 +6,7 @@ import com.example.popconback.gifticon.dto.CreateBookmarkDto;
 import com.example.popconback.gifticon.dto.CreateGifticonDto;
 import com.example.popconback.gifticon.dto.SortGifticonDto;
 import com.example.popconback.gifticon.service.GifticonService;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -58,6 +59,11 @@ public class GifticonController {
         return ResponseEntity.ok().build();
     }
 
+    //@Scheduled(cron = "0 0 09 * * ?")
+    @GetMapping("gifticon/checkOver")// 유효기간 지난거 상태 변경
+    public void Check_Overdate () {
+        gifticonService.check_overdate();
+    }
 
 
 
