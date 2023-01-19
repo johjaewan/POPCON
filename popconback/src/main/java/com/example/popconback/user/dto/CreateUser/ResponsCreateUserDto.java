@@ -1,9 +1,11 @@
-package com.example.popconback.user.dto;
+package com.example.popconback.user.dto.CreateUser;
 
 import lombok.Data;
 
+import java.util.Objects;
+
 @Data
-public class CreateUserDto {
+public class ResponsCreateUserDto {
 
     private String email;
     private String social;
@@ -14,8 +16,9 @@ public class CreateUserDto {
     private int timezone;
     private int manner_temp;
 
-
-
-
+    @Override
+    public int hashCode() {
+        return Objects.hash(email,social);
+    }
 
 }

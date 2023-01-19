@@ -1,4 +1,4 @@
-package com.example.popconback.gifticon.dto;
+package com.example.popconback.gifticon.dto.CreateBookmark;
 
 import lombok.Data;
 

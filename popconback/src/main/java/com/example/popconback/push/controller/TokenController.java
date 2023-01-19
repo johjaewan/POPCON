@@ -1,9 +1,12 @@
 package com.example.popconback.push.controller;
 
 import com.example.popconback.gifticon.domain.Gifticon;
+import com.example.popconback.gifticon.dto.GifticonDto;
 import com.example.popconback.gifticon.service.GifticonService;
 import com.example.popconback.push.service.FirebaseCloudMessageService;
 import com.example.popconback.user.domain.User;
+import com.example.popconback.user.dto.CreateUser.CreateUserDto;
+import com.example.popconback.user.dto.UserDto;
 import com.example.popconback.user.repository.UserRepository;
 import com.example.popconback.user.service.UserService;
 import org.slf4j.Logger;
@@ -13,7 +16,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.*;
 
-import javax.swing.text.html.parser.Entity;
 import java.io.IOException;
 import java.util.Date;
 import java.time.LocalDate;
@@ -56,10 +58,10 @@ public class TokenController {
     }
 
     @GetMapping("/push/{hash}")
-    public ResponseEntity<List<Gifticon>> sendMessagePerodic(@PathVariable int hash){
+    public ResponseEntity<List<GifticonDto>> sendMessagePerodic(@PathVariable int hash){
         //List<User> U_list = userService.getAllUser();
         //List<Gifticon> G_list;
-        System.out.println(hash);
+
         Optional<User> user = userRepository.findById(hash);
         User nuser = user.get();
         int Dday = nuser.getNday();
@@ -68,19 +70,19 @@ public class TokenController {
 
 
     public void pushmessage(int timezone) throws IOException{
-        List<User> U_list = userService.getAllUser();
-        for (User user : U_list) {
+        List<UserDto> U_list = userService.getAllUser();
+        for (UserDto user : U_list) {
             if(user.getAlarm() == 0 || user.getTimezone() != timezone) {// 알람 설정 안한 사람은 스킵 시간대 아니면 스킵 아침 0 점심 1 저녁 2
                 continue;
             }
 
-            int hash = user.getHash();
+            int hash = user.hashCode();
             int Dday = user.getNday();
             String Token = user.getToken();
-            List<Gifticon> list = gifticonService.getPushGifticon(hash, Dday);// 설정한 알림 기간에 해당하는 기프티콘 리스트
+            List<GifticonDto> list = gifticonService.getPushGifticon(hash, Dday);// 설정한 알림 기간에 해당하는 기프티콘 리스트
 
 
-            for (Gifticon gifticon : list) {
+            for (GifticonDto gifticon : list) {
                 Date date = java.sql.Date.valueOf(LocalDate.now().plusDays(Dday));//오늘 날짜에 알람설정 일 수를 더하고
                 Date Ddate = gifticon.getDue();// 사용 기간을 구하고
                 long diffsec = (date.getTime() - Ddate.getTime())/1000;// 둘의 차이를 뺀다
