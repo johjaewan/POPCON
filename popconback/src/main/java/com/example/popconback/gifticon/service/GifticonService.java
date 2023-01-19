@@ -133,9 +133,18 @@ public class GifticonService {
         bookmarkrepository.deleteByUser_HashAndBrand_BrandName(hash, brand_name);
     }
 
-    public List<Gifticon>   getPushGifticon (int hash, int Dday){// 사용한 기프티콘이나 기간지난거는 스테이트로 구분 하면 되는
+    public List<Gifticon> getPushGifticon (int hash, int Dday){// 사용한 기프티콘이나 기간지난거는 스테이트로 구분 하면 되는
         Date date = java.sql.Date.valueOf(LocalDate.now().plusDays(Dday));
         return gifticonRepository.findByUser_HashAndDueLessThanEqualAndState(hash, date,1);
+    }
+
+    public void check_overdate(){
+        Date date =java.sql.Date.valueOf(LocalDate.now());
+        List <Gifticon> list = gifticonRepository.findByDueAndState(date,1);
+        for (Gifticon gifticon: list) {
+            gifticon.setState(0);
+            gifticonRepository.save(gifticon);
+        }
     }
 
 }
