@@ -53,7 +53,6 @@ public class GifticonService {
             GifticonDto rgifticon = new GifticonDto();
             BeanUtils.copyProperties(gifticon,rgifticon);
             rgifticon.setHash(gifticon.getUser().getHash());
-            rgifticon.setBarcode_num(gifticon.getBarcodeNum());
             rgifticon.setBrandName(gifticon.getBrand().getBrandName());
             rlist.add(rgifticon);
         }
@@ -109,6 +108,7 @@ public class GifticonService {
         //System.out.println(hash);
 
         List <Gifticon>list = gifticonRepository.findByUser_HashAndBrand_BrandName(hash,sortGifticonDto.getBrandName());
+
         for (Gifticon gifticon: list
              ) {
             GifticonDto rgifticon = new GifticonDto();
@@ -136,6 +136,7 @@ public class GifticonService {
         BeanUtils.copyProperties(gifticonRepository.save(gifticon),responDto);
         responDto.setHash(gifticon.getUser().getHash());
         responDto.setBrandName(gifticon.getBrand().getBrandName());
+
         return responDto;
     }
 
