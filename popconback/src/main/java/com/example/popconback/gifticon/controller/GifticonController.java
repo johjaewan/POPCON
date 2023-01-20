@@ -23,7 +23,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @RequestMapping(value = "/api")
 @Component
-public class GifticonController {
+public class GifticonController {//test
 
     private final GifticonService gifticonService;
     @GetMapping("/gifticon/{email}/{social}") //유저의 기프티콘 정보 DB에서 보내주기 // 이것도 만료되거나 사용한거 다보낼까?
