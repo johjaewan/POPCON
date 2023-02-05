@@ -174,8 +174,7 @@ class LoginFragment : Fragment() {
                                         "onSuccess: ${ApplicationClass.sharedPreferencesUtil.accessToken}"
                                     )
                                 }
-
-
+                                
 
 
                                 //user = User(email, "카카오")
