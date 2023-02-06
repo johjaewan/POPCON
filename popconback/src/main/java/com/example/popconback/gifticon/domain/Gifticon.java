@@ -47,7 +47,7 @@ public class Gifticon {
 
     private int isVoucher;
 
-    @OneToOne(mappedBy = "gifticon")
+    @OneToOne(mappedBy = "gifticon", fetch = FetchType.LAZY)
     private Present present;
 
 }

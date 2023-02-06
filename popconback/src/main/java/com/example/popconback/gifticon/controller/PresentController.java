@@ -27,7 +27,7 @@ import java.util.List;
 @SwaggerDefinition(tags = {@Tag(name = "PresentContoller", description = "기부 컨트롤러")})
 @RestController
 @RequiredArgsConstructor
-@RequestMapping(value = "/api/v1/present")
+@RequestMapping(value = "/api/v1/presents")
 @Component
 public class PresentController {
 
