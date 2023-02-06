@@ -176,9 +176,8 @@ public class GifticonService {
         }
 
         BeanUtils.copyProperties(updateGifticonDto, gifticon,"email","social");
-
-
         gifticon.setBrand(brandrepository.findByBrandName(updateGifticonDto.getBrandName()));
+
         BeanUtils.copyProperties(gifticonRepository.save(gifticon),responDto);
         responDto.setBrandName(gifticon.getBrand().getBrandName());
         return responDto;

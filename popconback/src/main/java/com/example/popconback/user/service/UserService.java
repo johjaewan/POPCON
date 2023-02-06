@@ -46,7 +46,7 @@ public class UserService {
             return responsDto;
         }
 
-        BeanUtils.copyProperties(userRepository.save(user.toEntity()),responsDto );
+        BeanUtils.copyProperties(userRepository.save(user.toEntity()),responsDto);
         return responsDto;
     }
 
