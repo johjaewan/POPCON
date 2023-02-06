@@ -29,46 +29,47 @@ class AuthInterceptor : Interceptor {
                     ApplicationClass.sharedPreferencesUtil.accessToken = res.acessToken
                     ApplicationClass.sharedPreferencesUtil.refreshToken = res.refreshToekn
 
-                    Log.d(TAG, "intercept: ${ApplicationClass.sharedPreferencesUtil.accessToken}")
+                    Log.d(TAG, "intercept: ${res.acessToken}")
                     req =
                         request.newBuilder().addHeader(
                             "Authorization",
-                            "Bearer ${ApplicationClass.sharedPreferencesUtil.refreshToken ?: ""}"
-                        ).build()
-                    response = chain.proceed(req)
-                }
-            } 500 -> {
-            val authRepo = AuthRepository(AuthRemoteDataSource(RetrofitUtil.authService))
-            runBlocking {
-                val res = authRepo.refreshToken(ApplicationClass.sharedPreferencesUtil.refreshToken!!)
-                ApplicationClass.sharedPreferencesUtil.accessToken = res.acessToken
-                ApplicationClass.sharedPreferencesUtil.refreshToken = res.refreshToekn
-
-                Log.d(TAG, "intercept: ${ApplicationClass.sharedPreferencesUtil.accessToken}")
-                req =
-                    request.newBuilder().addHeader(
-                        "Authorization",
-                        "Bearer ${ApplicationClass.sharedPreferencesUtil.refreshToken ?: ""}"
-                    ).build()
-                response = chain.proceed(req)
-            }
-        }
-            403 -> {
-                val authRepo = AuthRepository(AuthRemoteDataSource(RetrofitUtil.authService))
-                runBlocking {
-                    val res = authRepo.refreshToken(ApplicationClass.sharedPreferencesUtil.refreshToken!!)
-                    ApplicationClass.sharedPreferencesUtil.accessToken = res.acessToken
-                    ApplicationClass.sharedPreferencesUtil.refreshToken = res.refreshToekn
-
-                    Log.d(TAG, "intercept?: ${ApplicationClass.sharedPreferencesUtil.accessToken}")
-                    req =
-                        request.newBuilder().addHeader(
-                            "Authorization",
-                            "Bearer ${ApplicationClass.sharedPreferencesUtil.refreshToken ?: ""}"
+                            "Bearer ${ApplicationClass.sharedPreferencesUtil.accessToken ?: ""}"
                         ).build()
                     response = chain.proceed(req)
                 }
             }
+//            500 -> {
+//            val authRepo = AuthRepository(AuthRemoteDataSource(RetrofitUtil.authService))
+//            runBlocking {
+//                val res = authRepo.refreshToken(ApplicationClass.sharedPreferencesUtil.refreshToken!!)
+//                ApplicationClass.sharedPreferencesUtil.accessToken = res.acessToken
+//                ApplicationClass.sharedPreferencesUtil.refreshToken = res.refreshToekn
+//
+//                Log.d(TAG, "intercept: ${ApplicationClass.sharedPreferencesUtil.accessToken}")
+//                req =
+//                    request.newBuilder().addHeader(
+//                        "Authorization",
+//                        "Bearer ${ApplicationClass.sharedPreferencesUtil.refreshToken ?: ""}"
+//                    ).build()
+//                response = chain.proceed(req)
+//            }
+//        }
+//            403 -> {
+//                val authRepo = AuthRepository(AuthRemoteDataSource(RetrofitUtil.authService))
+//                runBlocking {
+//                    val res = authRepo.refreshToken(ApplicationClass.sharedPreferencesUtil.refreshToken!!)
+//                    ApplicationClass.sharedPreferencesUtil.accessToken = res.acessToken
+//                    ApplicationClass.sharedPreferencesUtil.refreshToken = res.refreshToekn
+//
+//                    Log.d(TAG, "intercept?: ${ApplicationClass.sharedPreferencesUtil.accessToken}")
+//                    req =
+//                        request.newBuilder().addHeader(
+//                            "Authorization",
+//                            "Bearer ${ApplicationClass.sharedPreferencesUtil.refreshToken ?: ""}"
+//                        ).build()
+//                    response = chain.proceed(req)
+//                }
+//            }
         }
 
         return response
