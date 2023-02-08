@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <data>
+
         <variable
             name="gifticon"
             type="com.ssafy.popcon.dto.Gifticon" />
@@ -14,6 +15,7 @@
     </data>
 
     <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/cv_map_gifticon"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
@@ -22,24 +24,24 @@
             android:layout_height="match_parent"
             android:background="@color/transparent"
             android:elevation="2dp"
-            app:layout_constraintStart_toStartOf="parent"
             app:cardCornerRadius="12dp"
-            app:cardUseCompatPadding="true">
+            app:cardUseCompatPadding="true"
+            app:layout_constraintStart_toStartOf="parent">
 
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
-                android:background="@color/popcon_white"
-                android:layout_height="match_parent">
+                android:layout_height="match_parent"
+                android:background="@color/popcon_white">
 
                 <ImageView
                     android:id="@+id/iv_product_preview_map"
                     imageUrl="@{gifticon.product_filepath}"
                     android:layout_width="100dp"
                     android:layout_height="100dp"
+                    android:background="@color/popcon_white"
                     android:paddingStart="16dp"
                     android:paddingTop="10dp"
                     android:paddingBottom="10dp"
-                    android:background="@color/popcon_white"
                     android:scaleType="centerInside"
                     app:circularflow_defaultRadius="4dp"
                     app:layout_constraintBottom_toBottomOf="parent"
@@ -48,12 +50,12 @@
 
                 <TextView
                     android:id="@+id/tv_brand_map"
-                    style="@style/TextSubtitle2.Purple.Bold"
+                    style="@style/Bold.Brown"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="20dp"
                     android:text="@{gifticon.brand.brandName}"
-                    android:textSize="20sp"
+                    android:textSize="15sp"
                     app:layout_constraintBottom_toTopOf="@+id/tv_name_map"
                     app:layout_constraintStart_toEndOf="@+id/iv_product_preview_map"
                     app:layout_constraintTop_toTopOf="parent"
@@ -62,13 +64,13 @@
 
                 <TextView
                     android:id="@+id/tv_name_map"
-                    style="@style/TextSubtitle1.Bold"
+                    android:textSize="12sp"
+                    style="@style/Regular"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="20dp"
                     android:maxLines="1"
                     android:text="@{gifticon.productName}"
-                    android:textSize="15sp"
                     app:layout_constraintBottom_toTopOf="@+id/tv_date_map"
                     app:layout_constraintStart_toEndOf="@+id/iv_product_preview_map"
                     app:layout_constraintTop_toBottomOf="@+id/tv_brand_map"
@@ -76,13 +78,13 @@
 
                 <TextView
                     android:id="@+id/tv_date_map"
-                    style="@style/TextSubtitle2"
+                    style="@style/Regular.Grey"
                     date="@{gifticon.due}"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="20dp"
                     android:maxLines="1"
-                    android:textSize="15sp"
+                    android:textSize="11sp"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintStart_toEndOf="@+id/iv_product_preview_map"
                     app:layout_constraintTop_toBottomOf="@+id/tv_name_map"
@@ -90,7 +92,7 @@
 
                 <TextView
                     android:id="@+id/tv_banner_badge_map"
-                    style="@style/TextCaption1.White"
+                    style="@style/Regular.White"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="26dp"

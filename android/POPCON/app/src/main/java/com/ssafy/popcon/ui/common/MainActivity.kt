@@ -1,14 +1,18 @@
 package com.ssafy.popcon.ui.common
 
 import android.Manifest
-import android.content.Context
+import android.app.job.JobInfo
+import android.content.*
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.hardware.Sensor
 import android.hardware.SensorManager
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.View
+import android.view.Window
+import android.view.WindowManager
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -18,8 +22,9 @@ import com.google.android.material.shape.MaterialShapeDrawable
 import com.google.firebase.messaging.FirebaseMessaging
 import com.ssafy.popcon.R
 import com.ssafy.popcon.databinding.ActivityMainBinding
-import com.ssafy.popcon.dto.User
 import com.ssafy.popcon.ui.add.AddFragment
+import com.ssafy.popcon.ui.add.MMSReceiver
+import com.ssafy.popcon.ui.add.MyService
 import com.ssafy.popcon.ui.home.HomeFragment
 import com.ssafy.popcon.ui.login.LoginFragment
 import com.ssafy.popcon.ui.map.MapFragment
@@ -39,6 +44,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var accelerometer: Sensor
     private lateinit var checkPermission: CheckPermission
     private var permissionGranted = false
+    private var mmsReceiver = MMSReceiver()
 
     private val fcmViewModel: FCMViewModel by viewModels { ViewModelFactory(this) }
 
@@ -68,7 +74,9 @@ class MainActivity : AppCompatActivity() {
         setNavBar()
         checkPermissions()
         //getFCMToken()
-        
+        //SharedPreferencesUtil(this).deleteUser()
+        callMMSReceiver()
+
         //자동로그인
         if (SharedPreferencesUtil(this).getUser().email != "") {
             Log.d(TAG, "onCreate: 로그인됨")
@@ -79,10 +87,38 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    fun callMMSReceiver(){
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
+//            startForegroundService(intent)
+//        } else{
+//            startService(intent)
+//        }
+//
+//        JobInfo.Builder(1, ComponentName(this, MyService::class.java)).run {
+//            setRequiredNetworkType(JobInfo.NETWORK_TYPE_UNMETERED)
+//            //jobScheduler?.schedule(build())
+//        }
+
+        val intentFilter = IntentFilter()
+        intentFilter.addAction(
+            "android.provider.Telephony.WAP_PUSH_RECEIVED"
+        )
+        intentFilter.addDataType(
+            "application/vnd.wap.mms-message"
+        )
+
+        registerReceiver(MMSReceiver(), intentFilter)
+        //, Manifest.permission.BROADCAST_WAP_PUSH, null
+    }
+
+    fun updateStatusBarColor(color: String?) { // Color must be in hexadecimal fromat
+        val window: Window = window
+        window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
+        window.statusBarColor = Color.parseColor(color)
+    }
+
     //navigation bar 설정
     private fun setNavBar() {
-        //this.setStatusBarTransparent() // 투명 상태 바
-
         window.navigationBarColor = Color.WHITE;
 
         val radius = resources.getDimension(R.dimen.radius_small)
@@ -103,16 +139,25 @@ class MainActivity : AppCompatActivity() {
                     addFragment(AddFragment())
                     true
                 }
-                R.id.mapFragment ->{
+                R.id.mapFragment -> {
                     changeFragment(MapFragment())
                     true
                 }
-                R.id.settingsFragment->{
+                R.id.settingsFragment -> {
                     changeFragment(SettingsFragment())
                     true
                 }
-                //donateFragment 추가하기
                 else -> false
+            }
+        }
+
+        //재선택 방지
+        binding.bottomNav.setOnItemReselectedListener { menuItem ->
+            when (menuItem.itemId) {
+                R.id.mapFragment -> {}
+                R.id.addFragment -> {}
+                R.id.settingsFragment -> {}
+                R.id.homeFragment -> {}
             }
         }
     }
@@ -137,11 +182,13 @@ class MainActivity : AppCompatActivity() {
         Manifest.permission.ACCESS_FINE_LOCATION,
         Manifest.permission.ACCESS_COARSE_LOCATION,
         Manifest.permission.READ_EXTERNAL_STORAGE,
-        Manifest.permission.WRITE_EXTERNAL_STORAGE
+        Manifest.permission.WRITE_EXTERNAL_STORAGE,
+        Manifest.permission.RECEIVE_MMS,
+        Manifest.permission.READ_SMS
     )
 
     // 위치, 갤러리, 전화 권한
-    private fun checkPermissions() {
+    fun checkPermissions() {
         checkPermission = CheckPermission(this)
 
         if (!checkPermission.runtimeCheckPermission(this, *runtimePermissions)) {
@@ -164,6 +211,8 @@ class MainActivity : AppCompatActivity() {
                     && grantResults[2] == PackageManager.PERMISSION_GRANTED
                     && grantResults[3] == PackageManager.PERMISSION_GRANTED
                     && grantResults[4] == PackageManager.PERMISSION_GRANTED
+                    && grantResults[5] == PackageManager.PERMISSION_GRANTED
+                    && grantResults[6] == PackageManager.PERMISSION_GRANTED
                 ) {
                     //권한 승인
                     permissionGranted = true
@@ -233,5 +282,10 @@ class MainActivity : AppCompatActivity() {
     override fun onRestart() {
         super.onRestart()
         checkPermissions()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        unregisterReceiver(mmsReceiver)
     }
 }
