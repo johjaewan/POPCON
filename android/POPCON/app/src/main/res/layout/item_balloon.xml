@@ -19,17 +19,22 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_margin="4dp"
-        app:cardCornerRadius="8dp">
+        app:cardCornerRadius="20dp">
 
         <androidx.constraintlayout.widget.ConstraintLayout
+
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:padding="8dp">
+            android:padding="8dp"
+            android:background="@drawable/shape_round_white_bold">
 
             <TextView
                 android:id="@+id/tv_brandName"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:paddingLeft="5dp"
+                android:paddingTop="5dp"
+                android:paddingRight="5dp"
                 android:text="@{storeName}"
                 android:textColor="?android:attr/textColorPrimary"
                 android:textSize="14sp"
@@ -42,13 +47,16 @@
                 android:id="@+id/tv_phone"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:drawablePadding="10dp"
+                android:layout_marginEnd="7dp"
+                android:drawablePadding="1dp"
                 android:drawableTint="@color/popcon_orange"
+                android:paddingTop="4dp"
                 android:text="@{storePhone}"
-                android:textColor="#2196F3"
+                android:textColor="@color/popcon_grey_04"
                 android:textSize="14sp"
                 app:drawableLeftCompat="@drawable/ic_baseline_phone_24"
                 app:layout_constraintStart_toStartOf="@id/tv_brandName"
+                app:layout_constraintEnd_toEndOf="@id/tv_brandName"
                 app:layout_constraintTop_toBottomOf="@id/tv_brandName"
                 tools:text="0303030" />
 
