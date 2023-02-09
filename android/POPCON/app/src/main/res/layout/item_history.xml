@@ -97,10 +97,10 @@
             <TextView
                 android:id="@+id/tv_banner_badge_back"
                 style="@style/Regular.White"
-                android:layout_width="67dp"
-                android:layout_height="25dp"
+                android:layout_width="72dp"
+                android:layout_height="30.5dp"
                 android:layout_marginStart="29dp"
-                android:layout_marginEnd="13dp"
+                android:layout_marginEnd="8.5dp"
                 android:background="@{badge.color}"
                 android:paddingStart="7dp"
                 android:paddingTop="1dp"
@@ -109,7 +109,7 @@
                 android:text="@{badge.content}"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
-                tools:background="@color/popcon_grey_10"
+                tools:background="@drawable/shape_round_grey_shadow"
                 tools:text="    "
                 tools:textColor="@color/popcon_white" />
 
