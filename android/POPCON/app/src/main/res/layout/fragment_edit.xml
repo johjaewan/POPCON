@@ -12,7 +12,10 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_margin="12dp"
+        android:layout_marginTop="12dp"
+        android:layout_marginLeft="20dp"
+        android:layout_marginRight="20dp"
+        android:layout_marginBottom="20dp"
         android:fitsSystemWindows="true"
         android:paddingBottom="?attr/actionBarSize">
 
@@ -140,20 +143,21 @@
 
                         <androidx.appcompat.widget.AppCompatButton
                             android:id="@+id/btn_original_see"
+                            style="@style/Bold.Brown"
                             android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:background="@drawable/shape_round_grey"
+                            android:layout_height="54dp"
                             android:text="@string/original_see"
                             android:textSize="16sp"
-                            app:layout_constraintLeft_toLeftOf="parent"
-                            app:layout_constraintTop_toBottomOf="@+id/l_coupon_img" />
+                            android:background="@drawable/shape_round_white_shadow"
+                            app:layout_constraintTop_toBottomOf="@+id/l_coupon_img"
+                            app:layout_constraintLeft_toLeftOf="parent"/>
 
                     </androidx.constraintlayout.widget.ConstraintLayout>
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="20dp"
+                        android:layout_marginTop="33dp"
                         android:orientation="vertical"
                         app:layout_constraintTop_toBottomOf="@+id/l_add_coupon">
 
@@ -167,8 +171,9 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="@string/product_name"
-                                android:textColor="@color/popcon_black_03"
-                                android:textSize="15sp" />
+                                android:paddingStart="20dp"
+                                android:textColor="@color/popcon_grey_01"
+                                android:textSize="16sp" />
 
                             <EditText
                                 android:id="@+id/et_product_name"
@@ -189,8 +194,9 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="@string/product_brand"
-                                android:textColor="@color/popcon_black_03"
-                                android:textSize="15sp" />
+                                android:paddingStart="20dp"
+                                android:textColor="@color/popcon_grey_01"
+                                android:textSize="16sp" />
 
                             <EditText
                                 android:id="@+id/et_product_brand"
@@ -211,8 +217,9 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="@string/barcode"
-                                android:textColor="@color/popcon_black_03"
-                                android:textSize="15sp" />
+                                android:paddingStart="20dp"
+                                android:textColor="@color/popcon_grey_01"
+                                android:textSize="16sp" />
 
                             <TextView
                                 android:id="@+id/tv_barcode"
@@ -235,8 +242,9 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="@string/date"
-                                android:textColor="@color/popcon_black_03"
-                                android:textSize="15sp" />
+                                android:paddingStart="20dp"
+                                android:textColor="@color/popcon_grey_01"
+                                android:textSize="16sp" />
 
                             <EditText
                                 android:id="@+id/et_date"
@@ -264,8 +272,9 @@
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:text="@string/price"
-                                    android:textColor="@color/popcon_black_03"
-                                    android:textSize="15sp" />
+                                    android:paddingStart="7dp"
+                                    android:textColor="@color/popcon_grey_01"
+                                    android:textSize="16sp" />
 
                                 <CheckBox
                                     android:id="@+id/cb_price"
@@ -288,7 +297,7 @@
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:text="@string/won"
-                                    android:textColor="@color/popcon_black_03"
+                                    android:textColor="@color/popcon_grey_01"
                                     android:textSize="20sp" />
 
                                 <EditText
@@ -313,8 +322,10 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="@string/memo"
-                                android:textColor="@color/popcon_black_03"
-                                android:textSize="15sp" />
+                                android:paddingStart="20dp"
+                                android:layout_marginTop="20dp"
+                                android:textColor="@color/popcon_grey_01"
+                                android:textSize="16sp" />
 
                             <EditText
                                 android:id="@+id/et_write_memo"
@@ -322,6 +333,7 @@
                                 android:layout_height="wrap_content"
                                 android:backgroundTint="@color/popcon_grey_09"
                                 android:hint="@string/write_memo"
+                                android:paddingStart="20dp"
                                 android:text="@{gifticon.memo}" />
 
                         </LinearLayout>
@@ -336,10 +348,11 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_edit"
-            android:layout_width="250dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_margin="10dp"
-            android:background="@drawable/shape_round_orange"
+            android:layout_marginBottom="10dp"
+            android:background="@drawable/btn_round_orange"
+            android:elevation="2dp"
             android:text="@string/btn_edit"
             android:textSize="16sp"
             android:textStyle="bold"

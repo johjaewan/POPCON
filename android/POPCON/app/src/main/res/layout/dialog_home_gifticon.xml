@@ -152,6 +152,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:maxLines="1"
+                        android:layout_marginTop="4dp"
                         android:textSize="13sp"
                         app:layout_constraintStart_toStartOf="@id/tv_brand"
                         app:layout_constraintTop_toBottomOf="@id/tv_due_title"
@@ -186,8 +187,29 @@
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            app:layout_constraintStart_toStartOf="@id/cv_info"
+            android:layout_marginRight="20dp"
+            app:layout_constraintEnd_toEndOf="@id/cv_info"
             app:layout_constraintTop_toTopOf="@id/cv_info">
+
+
+            <TextView
+                android:id="@+id/tv_date_badge_back"
+                style="@style/Regular.White"
+                android:layout_width="57dp"
+                android:layout_height="34dp"
+                android:paddingEnd="22dp"
+
+
+                android:background="@{badge.color}"
+
+                android:text="@{badge.content}"
+                android:textSize="15sp"
+                app:layout_constraintStart_toStartOf="@+id/tv_date_badge"
+                app:layout_constraintTop_toTopOf="@+id/tv_date_badge"
+                tools:background="@drawable/shape_round_grey_shadow"
+                tools:text="    "
+                />
+
 
             <TextView
                 android:id="@+id/tv_date_badge"
@@ -207,7 +229,7 @@
                 android:textSize="15sp"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
-                tools:background="@color/popcon_grey_02"
+                tools:background="@color/popcon_grey_06"
                 tools:text="D - 7" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
@@ -221,6 +243,8 @@
             android:layout_marginBottom="12dp"
             android:background="@drawable/btn_use_on"
             android:text="수정하기"
+            android:textSize="16sp"
+            android:textStyle="bold"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toStartOf="@id/btn_delete"
             app:layout_constraintStart_toStartOf="parent"
@@ -234,6 +258,8 @@
             android:layout_marginEnd="24dp"
             android:background="@drawable/btn_delete"
             android:text="삭제"
+            android:textSize="16sp"
+            android:textStyle="bold"
             android:textColor="@color/popcon_white"
             app:layout_constraintBottom_toBottomOf="@id/btn_use"
             app:layout_constraintEnd_toEndOf="parent"
