@@ -83,7 +83,7 @@ class MainActivity : AppCompatActivity() {
         //checkPermissions()
 
         getFCMToken()
-        //SharedPreferencesUtil(this).deleteUser()
+        SharedPreferencesUtil(this).deleteUser()
         callMMSReceiver()
         chkNewMMSImg()
         // 스플레시 스크린 고려

@@ -33,7 +33,7 @@ data class BrandResponse(
 
 data class TokenResponse(
     val acessToken : String,
-    val refreshToekn : String
+    val refreshToken : String
 )
 
 data class FindDonateResponse(
@@ -52,5 +52,5 @@ data class UserResponse(
     val timezone: Int = 1,
     var token: String,
     val acessToken : String,
-    val refreshToekn : String
+    val refreshToken : String
 )

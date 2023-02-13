@@ -30,6 +30,7 @@ class ApplicationClass : Application() {
         lateinit var sharedPreferencesUtil: SharedPreferencesUtil
         lateinit var retrofit: Retrofit
         lateinit var refreshRetrofit: Retrofit
+        lateinit var context: Context
 
         // 모든 퍼미션 관련 배열
         val requiredPermissions = arrayOf(
@@ -42,7 +43,7 @@ class ApplicationClass : Application() {
                 .connectTimeout(5000, TimeUnit.MILLISECONDS)
                 // 로그캣에 okhttp.OkHttpClient로 검색하면 http 통신 내용을 보여줍니다.
                 //.authenticator(TokenAuthenticator())
-                .addInterceptor(AuthInterceptor())
+                .addInterceptor(AuthInterceptor(context))
                 .addInterceptor(HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY))
                 .build()
 
@@ -127,6 +128,7 @@ class ApplicationClass : Application() {
         sharedPreferencesUtil = SharedPreferencesUtil(applicationContext)
 
         super.onCreate()
+        context = applicationContext
 
         //shared preference 초기화
 

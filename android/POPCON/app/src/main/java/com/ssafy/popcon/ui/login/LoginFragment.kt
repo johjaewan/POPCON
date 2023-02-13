@@ -150,6 +150,9 @@ class LoginFragment : Fragment() {
             userResponse.timezone,
             fcmToken
         )
+        Log.d(TAG, "successLogin: ${userResponse.refreshToken}")
+        ApplicationClass.sharedPreferencesUtil.refreshToken =
+            userResponse.refreshToken
 
         RoomInitLogin(requireContext(), mmsViewModel).initRoom()
         sp.updateUser(newUser)
@@ -210,8 +213,6 @@ class LoginFragment : Fragment() {
                                     job.join()
                                     ApplicationClass.sharedPreferencesUtil.accessToken =
                                         userResponse.acessToken
-                                    ApplicationClass.sharedPreferencesUtil.refreshToken =
-                                        userResponse.refreshToekn
                                     Log.d(
                                         TAG,
                                         "onSuccess: ${ApplicationClass.sharedPreferencesUtil.accessToken}"
@@ -268,8 +269,6 @@ class LoginFragment : Fragment() {
                                 job.join()
                                 ApplicationClass.sharedPreferencesUtil.accessToken =
                                     userResponse.acessToken
-                                ApplicationClass.sharedPreferencesUtil.refreshToken =
-                                    userResponse.refreshToekn
                                 Log.d(
                                     TAG,
                                     "onSuccess: ${ApplicationClass.sharedPreferencesUtil.accessToken}"

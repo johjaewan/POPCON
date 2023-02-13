@@ -36,7 +36,7 @@ class TokenAuthenticator: Authenticator {
             Log.d(TAG, "authenticatedddd: ")
             val res = authRepo.refreshToken(ApplicationClass.sharedPreferencesUtil.refreshToken!!)
             ApplicationClass.sharedPreferencesUtil.accessToken = res.acessToken
-            ApplicationClass.sharedPreferencesUtil.refreshToken = res.refreshToekn
+            ApplicationClass.sharedPreferencesUtil.refreshToken = res.refreshToken
         }
 
         return response.request.newBuilder()

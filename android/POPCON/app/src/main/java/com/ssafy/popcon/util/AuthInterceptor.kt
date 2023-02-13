@@ -1,17 +1,20 @@
 package com.ssafy.popcon.util
 
+import android.content.Context
 import android.util.Log
 import com.ssafy.popcon.config.ApplicationClass
 import com.ssafy.popcon.repository.auth.AuthRemoteDataSource
 import com.ssafy.popcon.repository.auth.AuthRepository
+import com.ssafy.popcon.ui.common.MainActivity
 import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
 import okhttp3.Response
 
 private const val TAG = "AuthInterceptor_###"
-class AuthInterceptor : Interceptor {
+class AuthInterceptor(private val _context: Context) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
+        //val sp = SharedPreferencesUtil(_context)
 
         var req =
             request.newBuilder().addHeader(
@@ -21,15 +24,20 @@ class AuthInterceptor : Interceptor {
         Log.d("TAG", "auth intercept: ${ApplicationClass.sharedPreferencesUtil.accessToken}")
 
         var response = chain.proceed(req)
+        Log.d(TAG, "interceptttttttttt: ${ApplicationClass.sharedPreferencesUtil.refreshToken!!}")
         when(response.code){
             401 -> {
                 val authRepo = AuthRepository(AuthRemoteDataSource(RetrofitUtil.authService))
                 runBlocking {
-                    val res = authRepo.refreshToken(ApplicationClass.sharedPreferencesUtil.refreshToken!!)
-                    ApplicationClass.sharedPreferencesUtil.accessToken = res.acessToken
-                    ApplicationClass.sharedPreferencesUtil.refreshToken = res.refreshToekn
 
-                    Log.d(TAG, "intercept: ${res.acessToken}")
+                    //Log.d(TAG, "intercept_SP: ${sp.refreshToken!!}")
+                    val res = authRepo.refreshToken(ApplicationClass.sharedPreferencesUtil.refreshToken!!)
+//                    sp.accessToken = res.acessToken
+//                    sp.refreshToken = res.refreshToekn
+                    ApplicationClass.sharedPreferencesUtil.accessToken = res.acessToken
+                    ApplicationClass.sharedPreferencesUtil.refreshToken = res.refreshToken
+
+                    Log.d(TAG, "intercept: ${res.acessToken}\n ***  ${res.refreshToken}")
                     req =
                         request.newBuilder().addHeader(
                             "Authorization",
