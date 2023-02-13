@@ -4,11 +4,14 @@ import android.R.attr
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.drawable.Drawable
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.activity.viewModels
+import androidx.annotation.RequiresApi
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import com.bumptech.glide.Glide
@@ -29,14 +32,19 @@ import com.ssafy.popcon.BuildConfig
 import com.ssafy.popcon.R
 import com.ssafy.popcon.config.ApplicationClass
 import com.ssafy.popcon.databinding.FragmentLoginBinding
+import com.ssafy.popcon.dto.Gallery
 import com.ssafy.popcon.dto.TokenResponse
 import com.ssafy.popcon.dto.User
+import com.ssafy.popcon.dto.UserResponse
+import com.ssafy.popcon.mms.RoomInitLogin
 import com.ssafy.popcon.repository.auth.AuthRemoteDataSource
 import com.ssafy.popcon.repository.auth.AuthRepository
 import com.ssafy.popcon.ui.common.MainActivity
 import com.ssafy.popcon.ui.home.HomeFragment
 import com.ssafy.popcon.util.RetrofitUtil
 import com.ssafy.popcon.util.SharedPreferencesUtil
+import com.ssafy.popcon.viewmodel.FCMViewModel
+import com.ssafy.popcon.viewmodel.MMSViewModel
 import com.ssafy.popcon.viewmodel.UserViewModel
 import com.ssafy.popcon.viewmodel.ViewModelFactory
 import kotlinx.coroutines.CoroutineScope
@@ -51,10 +59,15 @@ private const val TAG = "LoginFragment_싸피"
 class LoginFragment : Fragment() {
     private lateinit var binding: FragmentLoginBinding
     private val viewModel: UserViewModel by viewModels { ViewModelFactory(requireContext()) }
-    lateinit var tokens: TokenResponse
+    private val fcmViewModel: FCMViewModel by viewModels { ViewModelFactory(requireContext()) }
+    private val mmsViewModel: MMSViewModel by viewModels { ViewModelFactory(requireContext()) }
+    lateinit var sp: SharedPreferencesUtil
+    lateinit var userResponse: UserResponse
+    //lateinit var tokens: TokenResponse
 
     private var userUUID: String = ""
-    var user = User("", "")
+    var fcmToken = ""
+    var user = User("", "", "")
 
     lateinit var kakaoCallback: (OAuthToken?, Throwable?) -> Unit
     lateinit var mainActivity: MainActivity
@@ -66,6 +79,7 @@ class LoginFragment : Fragment() {
     override fun onAttach(context: Context) {
         super.onAttach(context)
         mainActivity = activity as MainActivity
+        sp = SharedPreferencesUtil(requireContext())
     }
 
     @SuppressLint("ResourceAsColor")
@@ -94,6 +108,7 @@ class LoginFragment : Fragment() {
         mainActivity.hideBottomNav(true)
     }
 
+    @RequiresApi(Build.VERSION_CODES.Q)
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         init()
@@ -107,21 +122,46 @@ class LoginFragment : Fragment() {
 
     private fun init() {
         mainActivity = activity as MainActivity
+        fcmToken = fcmViewModel.token
     }
 
     // 앱을 처음 실행한 것인지, 로그아웃 또는 회원탈퇴를 한 직후인지 확인
     private fun chkRoute(){
         if (!fromSettingsFragment){
             //자동로그인
-            if (SharedPreferencesUtil(requireContext()).getUser().email != "") {
+            if (sp.getUser().email != "") {
                 mainActivity.changeFragment(HomeFragment())
             }
         } else{
-            SharedPreferencesUtil(requireContext()).deleteUser()
+            sp.deleteUser()
             fromSettingsFragment = false
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.Q)
+    private fun successLogin(userResponse: UserResponse){
+        val newUser = User(
+            userResponse.email,
+            userResponse.social,
+            userResponse.nday,
+            userResponse.alarm,
+            userResponse.manner_temp,
+            userResponse.term,
+            userResponse.timezone,
+            fcmToken
+        )
+
+        RoomInitLogin(requireContext(), mmsViewModel).initRoom()
+        sp.updateUser(newUser)
+        sp.setFCMToken(fcmToken)
+        sp.setGalleryInfo(
+            Gallery(System.currentTimeMillis(), 0)
+        )
+        mainActivity.makeGalleryDialogFragment(requireContext(), mainActivity.contentResolver)
+        mainActivity.changeFragment(HomeFragment())
+    }
+
+    @RequiresApi(Build.VERSION_CODES.Q)
     private fun kakaoLogin() {
         binding.btnKakaoLogin.setOnClickListener {
             kakaoCallback = { tokenInfo, error ->
@@ -154,36 +194,41 @@ class LoginFragment : Fragment() {
                             UserApiClient.instance.me { meUser, error ->
                                 val email = meUser?.kakaoAccount?.email.toString()
 
-                                user = User("abc@naver.com", "카카오")
-                                SharedPreferencesUtil(requireContext()).addUser(user)
+                                user = User("abccc@naver.com", "카카오", fcmToken)
+                                sp.addUser(user)
+                                sp.setGalleryInfo(
+                                    Gallery(System.currentTimeMillis(), 0)
+                                )
 
                                 val authRepo =
                                     AuthRepository(AuthRemoteDataSource(RetrofitUtil.authService))
 
                                 val job = CoroutineScope(Dispatchers.IO).launch {
-                                    tokens = authRepo.signIn(user)
+                                    userResponse = authRepo.signIn(user)
                                 }
                                 runBlocking {
                                     job.join()
                                     ApplicationClass.sharedPreferencesUtil.accessToken =
-                                        tokens.acessToken
+                                        userResponse.acessToken
                                     ApplicationClass.sharedPreferencesUtil.refreshToken =
-                                        tokens.refreshToekn
+                                        userResponse.refreshToekn
                                     Log.d(
                                         TAG,
                                         "onSuccess: ${ApplicationClass.sharedPreferencesUtil.accessToken}"
                                     )
+                                    successLogin(userResponse)
                                 }
                                 
 
 
                                 //user = User(email, "카카오")
-                                SharedPreferencesUtil(requireContext()).addUser(user)
+                                //sp.addUser(user)
+                                //sp.setGalleryDate(System.currentTimeMillis())
 
-                                viewModel.signInKakao(user)
-                                viewModel.user.observe(viewLifecycleOwner) {
-                                    mainActivity.changeFragment(HomeFragment())
-                                }
+//                                viewModel.signInKakao(user)
+//                                viewModel.user.observe(viewLifecycleOwner) {
+//                                    successLogin(it)
+//                                }
                             }
                         }
                     }
@@ -203,30 +248,34 @@ class LoginFragment : Fragment() {
                     // 네이버 로그인 API 호출 성공 시 유저 정보를 가져온다
                     NidOAuthLogin().callProfileApi(object :
                         NidProfileCallback<NidProfileResponse> {
+                        @RequiresApi(Build.VERSION_CODES.Q)
                         override fun onSuccess(result: NidProfileResponse) {
                             val email = result.profile?.email.toString()
                             //user = User(email, "네이버")
-                            user = User("abc@naver.com", "카카오")
-                            SharedPreferencesUtil(requireContext()).addUser(user)
+                            user = User("abc@naver.com", "카카오", fcmToken)
+                            sp.addUser(user)
+                            sp.setGalleryInfo(
+                                Gallery(System.currentTimeMillis(), 0)
+                            )
                             Log.e("TAG", "네이버 로그인한 유저 정보 - 이메일 : $email")
                             val authRepo =
                                 AuthRepository(AuthRemoteDataSource(RetrofitUtil.authService))
 
                             val job = CoroutineScope(Dispatchers.IO).launch {
-                                tokens = authRepo.signIn(user)
+                                userResponse = authRepo.signIn(user)
                             }
                             runBlocking {
                                 job.join()
                                 ApplicationClass.sharedPreferencesUtil.accessToken =
-                                    tokens.acessToken
+                                    userResponse.acessToken
                                 ApplicationClass.sharedPreferencesUtil.refreshToken =
-                                    tokens.refreshToekn
+                                    userResponse.refreshToekn
                                 Log.d(
                                     TAG,
                                     "onSuccess: ${ApplicationClass.sharedPreferencesUtil.accessToken}"
                                 )
+                                successLogin(userResponse)
                             }
-                            mainActivity.changeFragment(HomeFragment())
                         }
 
                         override fun onError(errorCode: Int, message: String) {
@@ -254,14 +303,15 @@ class LoginFragment : Fragment() {
     }
 
     // 비회원 로그인 : UUID 생성 후 리텅
+    @RequiresApi(Build.VERSION_CODES.Q)
     private fun nonMemberLogin() {
         if (userUUID == "")
             userUUID = UUID.randomUUID().toString()
         // 서버에게 생성한 UUID 전송할 레트로핏 코드
         Log.d(TAG, "nonMemberLogin: $userUUID")
-        SharedPreferencesUtil(requireContext()).addUser(User(userUUID, "비회원"))
-
-        mainActivity.changeFragment(HomeFragment())
+        val user = User(userUUID, "비회원", fcmToken)
+        sp.addUser(user)
+        //successLogin(user)
     }
 
     override fun onDestroy() {

@@ -1,6 +1,5 @@
 package com.ssafy.popcon.viewmodel
 
-import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -19,18 +18,27 @@ class AddViewModel(private val addRepository: AddRepository): ViewModel() {
     val ocrResult: LiveData<Event<List<OCRResult>>> = _ocrResult
 
     private val _brandChk = MutableLiveData<Event<ChkValidation>>()
-    val brandChk = _brandChk
+    val brandChk: LiveData<Event<ChkValidation>> = _brandChk
 
     private val _barcodeChk = MutableLiveData<Event<ChkValidation>>()
-    val barcodeChk = _barcodeChk
+    val barcodeChk: LiveData<Event<ChkValidation>> = _barcodeChk
+
+    private val _addGifticonResult = MutableLiveData<Event<List<AddInfoNoImg>>>()
+    val addGifticonResult: LiveData<Event<List<AddInfoNoImg>>> = _addGifticonResult
+
+    private val _gcpOtherResult = MutableLiveData<Event<List<GCPResult>>>()
+    val gcpOtherResult: LiveData<Event<List<GCPResult>>> = _gcpOtherResult
+
+    private val _addImgInfoResult = MutableLiveData<Event<List<List<AddImgInfoResult>>>>()
+    val addImgInfoResult: LiveData<Event<List<List<AddImgInfoResult>>>> = _addImgInfoResult
 
     fun addFileToGCP(files: Array<MultipartBody.Part>){
         viewModelScope.launch {
-            _gcpResult.postValue(Event(addRepository.addFileToGCP(files)))
+            _gcpResult.value = Event(addRepository.addFileToGCP(files))
         }
     }
 
-    fun useOcr(fileName: Array<String>){
+    fun useOcr(fileName: Array<OCRSend>){
         viewModelScope.launch {
             _ocrResult.value = Event(addRepository.useOcr(fileName))
         }
@@ -50,16 +58,19 @@ class AddViewModel(private val addRepository: AddRepository): ViewModel() {
 
     fun addGifticon(addInfo: List<AddInfoNoImg>){
         viewModelScope.launch {
-            addRepository.addGifticon(addInfo)
+            _addGifticonResult.value = Event(addRepository.addGifticon(addInfo))
         }
     }
 
-    fun addGifticonImg(
-        files:Array<MultipartBody.Part>,
-        imgInfo: Array<AddImgInfo>
-    ){
+    fun addOtherFileToGCP(files: Array<MultipartBody.Part>){
         viewModelScope.launch {
-            addRepository.addGifticonImg(files, imgInfo)
+            _gcpOtherResult.value = Event(addRepository.addFileToGCP(files))
+        }
+    }
+
+    fun addImgInfo(imgInfo: Array<AddImgInfo>){
+        viewModelScope.launch {
+            _addImgInfoResult.value = Event(addRepository.addImgInfo(imgInfo))
         }
     }
 }

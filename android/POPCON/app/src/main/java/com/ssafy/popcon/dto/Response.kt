@@ -12,7 +12,9 @@ data class GifticonResponse(
     val productName: String,
     val product_filepath: String?,
     var state : Int
-)
+) {
+    constructor() : this("","","","",0,-1,"", "", "", "", -1)
+}
 
 data class UpdateResponse(
     val barcodeNum : String,
@@ -30,6 +32,25 @@ data class BrandResponse(
 )
 
 data class TokenResponse(
+    val acessToken : String,
+    val refreshToekn : String
+)
+
+data class FindDonateResponse(
+    val allNearPresentList : List<Present>,
+    val gettablePresentList : List<Present>
+)
+
+data class UserResponse(
+    val email: String?,
+    val social: String,
+    val nday: Int = 1,
+    val alarm: Int = 1,
+    val secret: String?,
+    val manner_temp: Int = 1,
+    val term: Int = 1,
+    val timezone: Int = 1,
+    var token: String,
     val acessToken : String,
     val refreshToekn : String
 )

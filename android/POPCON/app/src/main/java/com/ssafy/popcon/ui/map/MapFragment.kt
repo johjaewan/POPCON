@@ -1,10 +1,14 @@
 package com.ssafy.popcon.ui.map
 
 import android.Manifest
+import android.content.ClipData
+import android.content.ClipDescription
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.*
 import android.location.LocationManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.StrictMode
@@ -12,22 +16,24 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
 import android.widget.Toast
+import androidx.cardview.widget.CardView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import com.ssafy.popcon.R
 import com.ssafy.popcon.config.ApplicationClass.Companion.sharedPreferencesUtil
 import com.ssafy.popcon.databinding.FragmentMapBinding
 import com.ssafy.popcon.databinding.ItemBalloonBinding
-import com.ssafy.popcon.dto.Store
-import com.ssafy.popcon.dto.StoreRequest
+import com.ssafy.popcon.dto.*
+import com.ssafy.popcon.ui.common.DragListener
+import com.ssafy.popcon.ui.common.DragShadowBuilder
 import com.ssafy.popcon.ui.common.MainActivity
-import com.ssafy.popcon.ui.common.MainActivity.Companion.shakeDetector
 import com.ssafy.popcon.ui.popup.GifticonDialogFragment
-import com.ssafy.popcon.ui.popup.GifticonDialogFragment.Companion.isShow
-import com.ssafy.popcon.util.ShakeDetector
+import com.ssafy.popcon.util.MyLocationManager
 import com.ssafy.popcon.util.SharedPreferencesUtil
 import com.ssafy.popcon.viewmodel.MapViewModel
 import com.ssafy.popcon.viewmodel.ViewModelFactory
@@ -35,8 +41,8 @@ import net.daum.mf.map.api.CalloutBalloonAdapter
 import net.daum.mf.map.api.MapPOIItem
 import net.daum.mf.map.api.MapPoint
 import net.daum.mf.map.api.MapView
+import net.daum.mf.map.api.MapView.CurrentLocationEventListener
 import net.daum.mf.map.api.MapView.MapViewEventListener
-import java.io.File
 import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URL
@@ -44,12 +50,24 @@ import java.net.URL
 
 private const val TAG = "MapFragment"
 
-class MapFragment : Fragment(), CalloutBalloonAdapter, MapViewEventListener {
+object DonateLocation {
+    var x: String = ""
+    var y: String = ""
+}
+
+class MapFragment : Fragment(), CalloutBalloonAdapter, MapViewEventListener,
+    MapView.POIItemEventListener, CurrentLocationEventListener {
     private lateinit var binding: FragmentMapBinding
     private val ACCESS_FINE_LOCATION = 1000     // Request Code
+    lateinit var lm: LocationManager
     private lateinit var ballBinding: ItemBalloonBinding
+    private var mode = 1
     lateinit var mainActivity: MainActivity
     private val viewModel: MapViewModel by activityViewModels { ViewModelFactory(requireContext()) }
+    var storeMap = HashMap<String, String>()
+    var markers = mutableListOf<MapPOIItem>()
+    var presentMarkers = mutableListOf<MapPOIItem>()
+    lateinit var donateLocMarker: MapPOIItem
 
     private lateinit var locationManager: LocationManager
     private var getLongitude: Double = 0.0
@@ -58,6 +76,7 @@ class MapFragment : Fragment(), CalloutBalloonAdapter, MapViewEventListener {
     override fun onAttach(context: Context) {
         super.onAttach(context)
 
+        GifticonDialogFragment.isShow = true
         mainActivity = activity as MainActivity
     }
 
@@ -70,6 +89,7 @@ class MapFragment : Fragment(), CalloutBalloonAdapter, MapViewEventListener {
         binding = FragmentMapBinding.inflate(inflater, container, false)
         ballBinding = ItemBalloonBinding.inflate(inflater, container, false)
 
+        moveMapUserToPosition(binding.mapView)
         return binding.root
     }
 
@@ -78,9 +98,7 @@ class MapFragment : Fragment(), CalloutBalloonAdapter, MapViewEventListener {
 
         val policy = StrictMode.ThreadPolicy.Builder().permitAll().build()
         StrictMode.setThreadPolicy(policy)
-
-        binding.mapView.setMapViewEventListener(this)
-        binding.mapView.setCalloutBalloonAdapter(this)
+        lm = MyLocationManager.getLocationManager(requireContext())
 
         if (checkLocationService()) {
             // GPS가 켜져있을 경우
@@ -91,14 +109,90 @@ class MapFragment : Fragment(), CalloutBalloonAdapter, MapViewEventListener {
             Toast.makeText(requireContext(), "GPS를 켜주세요", Toast.LENGTH_SHORT).show()
         }
 
+        binding.mapView.setMapViewEventListener(this)
+        binding.mapView.setCalloutBalloonAdapter(this)
+        binding.mapView.setCalloutBalloonAdapter(CustomBalloonAdapter(layoutInflater))
+        binding.mapView.setPOIItemEventListener(this)
+        binding.mapView.setCurrentLocationEventListener(this)
+
+        donateLocMarker = MapPOIItem()
+        donateLocMarker.itemName = "여기에 기부"
+
+        donateLocMarker.markerType = MapPOIItem.MarkerType.CustomImage
+        donateLocMarker.customImageResourceId = R.drawable.donate_marker
+        donateLocMarker.isCustomImageAutoscale = false // 커스텀 마커 이미지 크기 자동 조정
+        donateLocMarker.isDraggable = true
+
+        DonateLocation.x = binding.mapView.mapCenterPoint.mapPointGeoCoord.longitude.toString()
+        DonateLocation.y = binding.mapView.mapCenterPoint.mapPointGeoCoord.latitude.toString()
+
         setGifticonBanner()
         setStore()
-        setSensor()
 
         // 위치 업데이트 버튼 클릭시 화면 가운데를 현재 위치 변경
         binding.btnUpdatePosition.setOnClickListener {
-            moveMapUserToPosition(binding.mapView)
+            mode = 1//매장찾기 모드
             startTracking()
+            moveMapUserToPosition(binding.mapView)
+        }
+
+        binding.btnFind.setOnClickListener {
+            mode = 0//기부 찾기 모드
+            startTracking()
+            //moveMapUserToPosition(binding.mapView)
+            findPresent()
+        }
+    }
+
+    private fun findPresent() {
+        locationManager =
+            requireContext().getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        getUserLocation()
+        //y : 위도 latitude 경 127도, 위 37도
+        viewModel.getAllPresents(
+            FindPresentRequest(
+                getLongitude.toString(),
+                getLatitude.toString()
+            )
+        )
+        viewModel.presents.observe(viewLifecycleOwner) {
+            binding.mapView.removeAllPOIItems()
+
+            for (present in it) {
+                val marker = MapPOIItem()
+                val position = MapPoint.mapPointWithGeoCoord(
+                    present.y.toDouble(),
+                    present.x.toDouble()
+                )
+                marker.itemName = present.barcodeNum
+                marker.mapPoint = position
+
+                marker.markerType = MapPOIItem.MarkerType.CustomImage
+                marker.customImageResourceId = R.drawable.far
+                marker.isCustomImageAutoscale = false // 커스텀 마커 이미지 크기 자동 조정
+
+                presentMarkers.add(marker)
+                binding.mapView.addPOIItem(marker)
+            }
+        }
+
+        viewModel.presentsNear.observe(viewLifecycleOwner) {
+            for (present in it) {
+                val marker = MapPOIItem()
+                val position = MapPoint.mapPointWithGeoCoord(
+                    present.y.toDouble(),
+                    present.x.toDouble()
+                )
+                marker.itemName = present.barcodeNum
+                marker.mapPoint = position
+
+                marker.markerType = MapPOIItem.MarkerType.CustomImage
+                marker.customImageResourceId = R.drawable.near
+                marker.isCustomImageAutoscale = false // 커스텀 마커 이미지 크기 자동 조정
+
+                presentMarkers.add(marker)
+                binding.mapView.addPOIItem(marker)
+            }
         }
     }
 
@@ -121,7 +215,6 @@ class MapFragment : Fragment(), CalloutBalloonAdapter, MapViewEventListener {
             }
         }
     }
-
 
     private fun moveMapUserToPosition(mapView: MapView) {
         getUserLocation()
@@ -188,10 +281,12 @@ class MapFragment : Fragment(), CalloutBalloonAdapter, MapViewEventListener {
         binding.mapView.currentLocationTrackingMode =
             MapView.CurrentLocationTrackingMode.TrackingModeOff
 
-        binding.mapView.setShowCurrentLocationMarker(false)
+        binding.mapView.setCustomCurrentLocationMarkerImage(
+            R.drawable.popcon_point,
+            MapPOIItem.ImageOffset(10, 10)
+        )
     }
 
-    var markers = mutableListOf<MapPOIItem>()
     private fun setStore() {
         locationManager =
             requireContext().getSystemService(Context.LOCATION_SERVICE) as LocationManager
@@ -207,11 +302,11 @@ class MapFragment : Fragment(), CalloutBalloonAdapter, MapViewEventListener {
         //y : 위도 latitude 경 127도, 위 37도
         viewModel.getStoreInfo(request)
         viewModel.store.observe(viewLifecycleOwner) {
-            Log.d(TAG, "setStore: $it")
+            storeMap.clear()
             binding.mapView.removeAllPOIItems()
-            binding.mapView.setCalloutBalloonAdapter(CustomBalloonAdapter(it))
 
             for (store in it) {
+                storeMap.put(store.placeName, store.phone)
                 val marker = MapPOIItem()
                 val position = MapPoint.mapPointWithGeoCoord(
                     store.ypos.toDouble(),
@@ -221,7 +316,7 @@ class MapFragment : Fragment(), CalloutBalloonAdapter, MapViewEventListener {
                 marker.mapPoint = position
 
                 marker.markerType = MapPOIItem.MarkerType.CustomImage
-                marker.customImageBitmap = drawableFromUrl(store.brandInfo.brandImg!!)
+                marker.customImageBitmap = resizeBitmapFromUrl(store.brandInfo.brandImg!!)
                 marker.isCustomImageAutoscale = false // 커스텀 마커 이미지 크기 자동 조정
 
                 markers.add(marker)
@@ -252,12 +347,64 @@ class MapFragment : Fragment(), CalloutBalloonAdapter, MapViewEventListener {
         return Bitmap.createScaledBitmap(source, newWidth, newHeight, true)
     }
 
+    lateinit var donateNumber: String
+
     //기프티콘 뷰페이저
     private fun setGifticonBanner() {
+        val user = SharedPreferencesUtil(requireContext()).getUser()
+        val targetView = binding.viewDonate
+        var gifticonAdapter = MapGifticonAdpater(targetView, viewModel, user, lm)
+
+        gifticonAdapter.setOnLongClickListener(object : MapGifticonAdpater.OnLongClickListener {
+            override fun onLongClick(v: View, gifticon: Gifticon) {
+                stopTracking()
+                val centerPoint = binding.mapView.mapCenterPoint
+
+                if (!binding.mapView.poiItems.contains(donateLocMarker)) {
+                    donateLocMarker.mapPoint = centerPoint
+                    DonateLocation.x = centerPoint.mapPointGeoCoord.longitude.toString()
+                    DonateLocation.y = centerPoint.mapPointGeoCoord.latitude.toString()
+
+                    binding.mapView.selectPOIItem(donateLocMarker, false)
+                    binding.mapView.addPOIItem(donateLocMarker)
+                }
+
+                val item = ClipData.Item(v.tag as? CharSequence)
+                val dragData = ClipData(
+                    v.tag as? CharSequence,
+                    arrayOf(ClipDescription.MIMETYPE_TEXT_PLAIN),
+                    item
+                )
+                val shadow = DragShadowBuilder.fromResource(requireContext(), R.drawable.present)
+
+                donateNumber = gifticon.barcodeNum
+                gifticonAdapter.setOnDragListener(
+                    DragListener(
+                        targetView,
+                        gifticon.barcodeNum,
+                        viewModel,
+                        user,
+                        lm
+                    )
+                )
+                binding.viewDonate.setOnDragListener(
+                    DragListener(
+                        targetView,
+                        gifticon.barcodeNum,
+                        viewModel,
+                        user,
+                        lm
+                    )
+                )
+
+                v.startDrag(dragData, shadow, v, 0)
+            }
+        })
+
         viewModel.getGifticonByUser(SharedPreferencesUtil(requireContext()).getUser())
 
         with(binding.viewpagerMapGiftcon) {
-            adapter = MapGifticonAdpater().apply {
+            adapter = gifticonAdapter.apply {
                 viewModel.mapGifticon.observe(viewLifecycleOwner) {
                     submitList(it)
                 }
@@ -283,45 +430,42 @@ class MapFragment : Fragment(), CalloutBalloonAdapter, MapViewEventListener {
         TODO("Not yet implemented")
     }
 
-    inner class CustomBalloonAdapter(private val stores: List<Store>) :
-        CalloutBalloonAdapter {
+    inner class CustomBalloonAdapter(inflater: LayoutInflater) : CalloutBalloonAdapter {
+        private val mCalloutBalloon: View = inflater.inflate(R.layout.item_balloon, null)
+        val name: TextView = mCalloutBalloon.findViewById(R.id.tv_brandName)
+        val phone: TextView = mCalloutBalloon.findViewById(R.id.tv_phone)
+
         override fun getCalloutBalloon(poiItem: MapPOIItem?): View {
             // 마커 클릭 시 나오는 말풍선
-            val name = poiItem?.itemName
-            for (store in stores) {
-                if (store.placeName == name) {
-                    ballBinding.store = store
-                    break
+            if (storeMap.containsKey(poiItem?.itemName)) {//매장 핀
+                name.text = poiItem?.itemName
+                phone.text = storeMap[poiItem?.itemName]
+            } else {//기부 핀
+                phone.isVisible = false
+                if (poiItem?.customImageResourceId == R.drawable.near) {
+                    name.text = "줍기"
+                } else if (poiItem?.customImageResourceId == R.drawable.far) {
+                    val view: CardView = mCalloutBalloon.findViewById(R.id.ballView)
+                    view.setCardBackgroundColor(Color.parseColor("#FF9797"))
+                    name.text = "더 가까이 이동하세요"
+                } else if (poiItem?.customImageResourceId == R.drawable.donate_marker) {
+                    name.text = "여기에 기부"
                 }
             }
 
-            return ballBinding.root
+            return mCalloutBalloon
         }
 
         override fun getPressedCalloutBalloon(poiItem: MapPOIItem?): View {
             // 말풍선 클릭 시
-            return ballBinding.root
+            if (mode == 1) {
+                stopTracking()
+            }
+            return mCalloutBalloon
         }
     }
 
-    //화면 켜지면 센서 설정
-    private fun setSensor() {
-        shakeDetector = ShakeDetector()
-        shakeDetector.setOnShakeListener(object : ShakeDetector.OnShakeListener {
-            override fun onShake(count: Int) {
-                if (!isShow) {
-                    activity?.let {
-                        GifticonDialogFragment().show(it.supportFragmentManager, "popup")
-                    }
-                }
-            }
-        })
-        MainActivity().setShakeSensor(requireContext(), shakeDetector)
-    }
-    // 1. 비트맵 사이즈 비율대로 줄이고 내부 저장소에 저장하는 함수
-
-    // 4. imgUrl을 Drawable로 바꿔주는 함수
-    private fun drawableFromUrl(url: String): /*Drawable*/Bitmap {
+    private fun resizeBitmapFromUrl(url: String): Bitmap {
         val x: Bitmap
         val connection: HttpURLConnection = URL(url).openConnection() as HttpURLConnection
         connection.connect()
@@ -341,9 +485,9 @@ class MapFragment : Fragment(), CalloutBalloonAdapter, MapViewEventListener {
         return resizeBitmapImage(output, 60)!!
     }
 
+    //지도 리스너
     override fun onMapViewInitialized(p0: MapView?) {
-        Log.d(TAG, "onMapViewInitialized: ")
-        //TODO("Not yet implemented")
+
     }
 
     override fun onMapViewCenterPointMoved(p0: MapView?, p1: MapPoint?) {
@@ -364,342 +508,89 @@ class MapFragment : Fragment(), CalloutBalloonAdapter, MapViewEventListener {
 
     override fun onMapViewDragStarted(p0: MapView?, p1: MapPoint?) {
         stopTracking()
-        Log.d(TAG, "onMapViewDragStarted: ")
     }
 
     override fun onMapViewDragEnded(p0: MapView?, p1: MapPoint?) {
+        if (mode == 1) {
+            val user = SharedPreferencesUtil(requireContext()).getUser()
+            val location = binding.mapView.mapCenterPoint.mapPointGeoCoord
+            if (viewModel.brandName == "전체") {
+                viewModel.getStoreInfo(
+                    StoreRequest(
+                        user.email,
+                        user.social,
+                        location.longitude.toString(),
+                        location.latitude.toString()
+                    )
+                )
+            } else {
+                viewModel.getStoreByBrand(
+                    StoreByBrandRequest(
+                        viewModel.brandName,
+                        user.email!!,
+                        user.social,
+                        location.longitude.toString(), location.latitude.toString()
+                    )
+                )
+            }
+        }
     }
 
     override fun onMapViewMoveFinished(p0: MapView?, p1: MapPoint?) {
     }
-}
-/*
-class MapFragment : Fragment(), CalloutBalloonAdapter {
-    private lateinit var binding: FragmentMapBinding
-    private lateinit var ballBinding: ItemBalloonBinding
-    private lateinit var locationManager: LocationManager
-    private var getLongitude: Double = 0.0
-    private var getLatitude: Double = 0.0
-    private lateinit var internalStorage: String
-    private val viewModel: MapViewModel by activityViewModels { ViewModelFactory(requireContext()) }
 
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
+    //마커 리스너
+    override fun onPOIItemSelected(p0: MapView?, p1: MapPOIItem?) {
 
-        binding = FragmentMapBinding.inflate(inflater, container, false)
-        ballBinding = ItemBalloonBinding.inflate(inflater, container, false)
-
-        return binding.root
     }
 
-    @RequiresApi(Build.VERSION_CODES.N)
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-
-
-        val mapView = binding.mapView
-
-        setGifticonBanner()
-        setStore()
-        setSensor()
-
-        // 로고 이미지를 저장할 위치 - 내부 저장소
-        internalStorage = requireContext().filesDir.toString() + "/brandLogo"
-
-        // 사용자 현재 위치 가져오기, GPS 우선
-        locationManager = requireContext().getSystemService(LOCATION_SERVICE) as LocationManager
-        getUserLocation()
-
-
-
-        // 위치 업데이트 버튼 클릭시 화면 가운데를 현재 위치 변경
-        binding.btnUpdatePosition.setOnClickListener {
-            moveMapUserToPosition(mapView)
-        }
-        // imgUrl to Drawable 함수 사용 할 때 필요함 삭제 ㄴㄴ
-        val policy = StrictMode.ThreadPolicy.Builder().permitAll().build()
-        StrictMode.setThreadPolicy(policy)
-        // 1. 내부저장소에 로고만 저장할 폴더 없으면 만들기
-        val path =
-            File("$internalStorage") // internalStorage = requireContext().filesDir.toString() + "/brandLogo"
-        if (!path.exists()) {
-            path.mkdirs()
-        }
-    }
-
-    // 현 위치 마커 추가
-    private fun makeCurrPoint() {
-        getUserLocation()
-
-        var currentMarker = MapPOIItem()
-        currentMarker.apply {
-            itemName = "현위치"
-            mapPoint = MapPoint.mapPointWithGeoCoord(getLatitude, getLongitude)
-            currentMarker.markerType = MapPOIItem.MarkerType.CustomImage // 기본으로 제공되는 파란색 핀
-            customImageResourceId = R.drawable.popcon_point
-        }
-        binding.mapView.addPOIItem(currentMarker)
-    }
-
-    inner class CustomBalloonAdapter(private val stores: List<Store>) :
-        CalloutBalloonAdapter {
-        override fun getCalloutBalloon(poiItem: MapPOIItem?): View {
-            // 마커 클릭 시 나오는 말풍선
-            val name = poiItem?.itemName
-            for (store in stores) {
-                if (store.placeName == name) {
-                    ballBinding.store = store
-                    break
-                }
+    override fun onCalloutBalloonOfPOIItemTouched(p0: MapView?, p1: MapPOIItem?) {
+        if (mode == 1) {
+            var intent = Intent(Intent.ACTION_DIAL)
+            intent.data = Uri.parse("tel:" + ballBinding.tvPhone.text)
+            if (intent.resolveActivity(requireActivity().packageManager) != null) {
+                startActivity(intent)
             }
-
-            return ballBinding.root
-        }
-
-        override fun getPressedCalloutBalloon(poiItem: MapPOIItem?): View {
-            // 말풍선 클릭 시
-            return ballBinding.root
-        }
-    }
-
-    var markers = mutableListOf<MapPOIItem>()
-    private fun setStore() {
-        locationManager =
-            requireContext().getSystemService(Context.LOCATION_SERVICE) as LocationManager
-        getUserLocation()
-
-        val request = StoreRequest(
-            sharedPreferencesUtil.getUser().email!!,
-            sharedPreferencesUtil.getUser().social,
-            getLongitude.toString(),
-            getLatitude.toString()
-        )
-
-        //y : 위도 latitude 경 127도, 위 37도
-        viewModel.getStoreInfo(request)
-        viewModel.store.observe(viewLifecycleOwner) {
-            binding.mapView.removeAllPOIItems()
-
-            Log.d(TAG, "setStore: $it")
-            binding.mapView.setCalloutBalloonAdapter(CustomBalloonAdapter(it))
-
-            for (store in it) {
-                val marker = MapPOIItem()
-                val position = MapPoint.mapPointWithGeoCoord(
-                    store.ypos.toDouble(),
-                    store.xpos.toDouble()
-                )
-
-                marker.itemName = store.placeName
-                marker.mapPoint = position
-                //marker.markerType = MapPOIItem.MarkerType.BluePin
-                marker.markerType = MapPOIItem.MarkerType.CustomImage
-                //marker.customImageResourceId = R.drawable.drawableFromUrl("https://contents.lotteon.com/search/brand/P2/38/6/P2386_320_320.jpg/dims/optimize/dims/resize/400x400")
-                //marker.selectedMarkerType = MapPOIItem.MarkerType.RedPin
-
-                markers.add(marker)
-                binding.mapView.addPOIItem(marker)
-            }
-
-            makeCurrPoint()
-        }
-    }
-
-    //기프티콘 뷰페이저
-    fun setGifticonBanner() {
-        viewModel.getGifticonByUser(SharedPreferencesUtil(requireContext()).getUser())
-
-        with(binding.viewpagerMapGiftcon) {
-            adapter = MapGifticonAdpater().apply {
-                viewModel.mapGifticon.observe(viewLifecycleOwner) {
-                    submitList(it)
-                }
-            }
-
-            val pageWidth = resources.getDimension(R.dimen.viewpager_item_widwth)
-            val pageMargin = resources.getDimension(R.dimen.viewpager_item_margin)
-            val screenWidth = resources.displayMetrics.widthPixels
-            val offset = screenWidth - pageWidth - pageMargin
-
-            offscreenPageLimit = 3
-            setPageTransformer { page, position ->
-                page.translationX = position * -offset
-            }
-        }
-    }
-
-    // 5. 현재 위치로 중심점 변경하는 함수
-    private fun moveMapUserToPosition(mapView: MapView) {
-        getUserLocation()
-
-        mapView.setMapCenterPointAndZoomLevel(
-            MapPoint.mapPointWithGeoCoord(
-                getLatitude,
-                getLongitude
-            ), 3, true
-        )
-    }
-
-    // 6. 사용자 위치 받아오는 함수
-    private fun getUserLocation() {
-        if (::locationManager.isInitialized.not()) {
-            locationManager =
-                requireContext().getSystemService(Context.LOCATION_SERVICE) as LocationManager
-        }
-        if (Build.VERSION.SDK_INT >= 23 &&
-            ContextCompat.checkSelfPermission(
-                requireContext(),
-                Manifest.permission.ACCESS_FINE_LOCATION
-            )
-            != PackageManager.PERMISSION_GRANTED
-        ) {
-            ActivityCompat.requestPermissions(
-                requireActivity(),
-                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
-                0
-            )
         } else {
-            var location =
-                locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
-            if (location == null) {
-                location =
-                    locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+            if (p1?.customImageResourceId == R.drawable.near) {
+                viewModel.getGifticonByBarcodeNum(p1.itemName ?: "")
+                PresentDialogFragment().show(childFragmentManager, "present")
             }
-
-            getLongitude = location?.longitude!!
-            getLatitude = location?.latitude!!
         }
     }
 
-    //화면 켜지면 센서 설정
-    private fun setSensor() {
-        shakeDetector = ShakeDetector()
-        shakeDetector.setOnShakeListener(object : ShakeDetector.OnShakeListener {
-            override fun onShake(count: Int) {
-                if (!isShow) {
-                    activity?.let {
-                        GifticonDialogFragment().show(it.supportFragmentManager, "popup")
-                    }
-                }
-            }
-        })
-        MainActivity().setShakeSensor(requireContext(), shakeDetector)
+    override fun onCalloutBalloonOfPOIItemTouched(
+        p0: MapView?,
+        p1: MapPOIItem?,
+        p2: MapPOIItem.CalloutBalloonButtonType?
+    ) {
     }
 
-    // 1. 비트맵 사이즈 비율대로 줄이고 내부 저장소에 저장하는 함수
-    fun resizeBitmap(fileName: String, brand: String) {
-        val tempFile = File(internalStorage, fileName)
-        try {
-            tempFile.createNewFile()  // 빈 파일을 생성
-            val out = FileOutputStream(tempFile) // 파일을 쓸 수 있는 스트림 준비
-            var logoUrl = logoImageUrl(brand) // 브랜드에 따라 로고 url 받아오는 함수
-            var bitmap = drawableFromUrl(logoUrl).toBitmap() // 로고url에 있는걸 비트맵으로 바꾸는 함수
+    override fun onDraggablePOIItemMoved(p0: MapView?, p1: MapPOIItem?, p2: MapPoint?) {
+        mode = 2
+        DonateLocation.x = p2!!.mapPointGeoCoord.longitude.toString()
+        DonateLocation.y = p2!!.mapPointGeoCoord.latitude.toString()
+    }
 
-            // 이미지 크기에 따라 압축률 정하기
-            var quality = 0.25
-            if (bitmap.width > 2048 && bitmap.height > 2048) {
-                quality = 0.7
-            } else if (bitmap.width > 1024 && bitmap.height > 1024) {
-            }
-            quality = 0.4
-            // 비트맵 압축률만큼 압축하기
-            bitmap = Bitmap.createScaledBitmap(
-                bitmap,
-                (bitmap.width * quality).toInt(),
-                (bitmap.height * quality).toInt(),
-                true
+    //트래킹 리스너
+    override fun onCurrentLocationUpdate(p0: MapView?, p1: MapPoint?, p2: Float) {
+        viewModel.getAllPresents(
+            FindPresentRequest(
+                p1!!.mapPointGeoCoord.longitude.toString(),
+                p1!!.mapPointGeoCoord.latitude.toString()
             )
-            // 비트맵 저장
-            saveBitmap(bitmap, tempFile.toString())
-            // 리소스 해제 및 닫기
-            out.close()
-            bitmap.recycle() // 비트맵은 리소스 많이 먹어서 해제 필수
-        } catch (e: FileNotFoundException) {
-        } catch (e: IOException) {
-        }
+        )
     }
 
-    // 2. 비트맵 저장하는 함수
-    fun saveBitmap(bitmap: Bitmap, filePath: String): String {
-        var out = FileOutputStream(filePath)
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, out)
-        return filePath
+    override fun onCurrentLocationDeviceHeadingUpdate(p0: MapView?, p1: Float) {
+
     }
 
-    // 3. 브랜드에 따라 (서버에 올린?) 로고 이미지 주소 리턴하는 함수
-    fun logoImageUrl(brand: String): String {
-        return when (brand) {
-            "스타벅스" -> "https://user-images.githubusercontent.com/33195517/211949184-c6e4a8e1-89a2-430c-9ccf-4d0a20546c14.png"
-            "이디야" -> ""
-            else -> ""
-        }
+    override fun onCurrentLocationUpdateFailed(p0: MapView?) {
+
     }
 
-    // 4. imgUrl을 Drawable로 바꿔주는 함수
-    private fun drawableFromUrl(url: String): Drawable {
-        val x: Bitmap
-        val connection: HttpURLConnection = URL(url).openConnection() as HttpURLConnection
-        connection.connect()
-        val input: InputStream = connection.getInputStream()
-        x = BitmapFactory.decodeStream(input)
-        return BitmapDrawable(Resources.getSystem(), x)
-    }
+    override fun onCurrentLocationUpdateCancelled(p0: MapView?) {
 
-    //배너 클릭하면, 기프티콘, 매장위치 받아와야함.
-    */
-/*private fun topBannerClickListener() {
-        // 나중에 서버에서 받아올 가게 정보 = storeList
-        viewModel.mapBrandLogo.observe(viewLifecycleOwner, Observer {
-            // 2. 해당 브랜드들 미리 내부 저장소에 다운 시키기 -> 이미 저장되어 있으면 안하고, 내부 저장소에 저장함. Device File Explorer ㄱㄱ
-            for (store in it) {
-                val files = path.listFiles()
-                var alreadyStore = false
-                for (file in files) {
-                    if (store.brandName == file.name) {
-                        alreadyStore = true
-                        break
-                    }
-                }
-                // 2-1. 브랜드 로고 없다면 추가
-                if (!alreadyStore) {
-                    // 0. storage에 파일 인스턴스를 생성합니다.
-                    fileName = "${store.brandName}.jpg" // 파일 이름은 브랜드 한글 이름
-                    // 1. resizeBitmap
-                    resizeBitmap(fileName, store.brandName)
-                }
-                // 3. 없다면, 인터넷에 있는 사진을 다운
-                // 4. 다운 받고 사이즈를 줄여서 다시 저장
-            }
-
-            // 지도에서 마커 추가하기
-            for (store in it) {
-                var tempMarker = MapPOIItem()
-                tempMarker.apply {
-                    itemName = store.itemName
-                    mapPoint = MapPoint.mapPointWithGeoCoord(
-                        store.xPos!!.toDouble(),
-                        store.yPos!!.toDouble()
-                    )
-                    markerType = MapPOIItem.MarkerType.CustomImage
-                    var filePath = File(internalStorage, "/$fileName") // internalStorage = requireContext().filesDir.toString() + "/brandLogo"
-                    customImageBitmap = BitmapFactory.decodeFile(filePath.toString())
-                    isCustomImageAutoscale = false // 커스텀 마커 이미지 크기 자동 조정
-                }
-                mapView.addPOIItem(tempMarker)
-            }
-        })
-    }*//*
-
-
-    override fun getCalloutBalloon(p0: MapPOIItem?): View {
-        TODO("Not yet implemented")
-    }
-
-    override fun getPressedCalloutBalloon(p0: MapPOIItem?): View {
-        TODO("Not yet implemented")
     }
 }
-*/

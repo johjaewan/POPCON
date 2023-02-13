@@ -2,14 +2,13 @@ package com.ssafy.popcon.repository.add
 
 import com.ssafy.popcon.dto.*
 import okhttp3.MultipartBody
-import okhttp3.RequestBody
 
 class AddRepository(private val remoteDataSource: AddRemoteDataSource) {
     suspend fun addFileToGCP(files: Array<MultipartBody.Part>): List<GCPResult>{
         return remoteDataSource.addFileToGCP(files)
     }
 
-    suspend fun useOcr(fileName: Array<String>): List<OCRResult>{
+    suspend fun useOcr(fileName: Array<OCRSend>): List<OCRResult>{
         return remoteDataSource.useOcr(fileName)
     }
 
@@ -25,10 +24,7 @@ class AddRepository(private val remoteDataSource: AddRemoteDataSource) {
         return remoteDataSource.addGifticon(addInfo)
     }
 
-    suspend fun addGifticonImg(
-        files:Array<MultipartBody.Part>,
-        imgInfo: Array<AddImgInfo>
-    ): List<AddImgInfoResult>{
-        return remoteDataSource.addGifticonImg(files, imgInfo)
+    suspend fun addImgInfo(imgInfo: Array<AddImgInfo>): List<List<AddImgInfoResult>>{
+        return remoteDataSource.addImgInfo(imgInfo)
     }
 }

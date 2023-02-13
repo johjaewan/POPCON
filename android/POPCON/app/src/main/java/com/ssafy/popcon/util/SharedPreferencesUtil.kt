@@ -3,6 +3,8 @@ package com.ssafy.popcon.util
 import android.content.Context
 import android.content.Context.MODE_PRIVATE
 import android.content.SharedPreferences
+import android.graphics.Bitmap
+import com.ssafy.popcon.dto.Gallery
 import com.ssafy.popcon.dto.User
 
 class SharedPreferencesUtil(context: Context) {
@@ -33,6 +35,7 @@ class SharedPreferencesUtil(context: Context) {
         editor.putInt("noti_first", user.nday)
         editor.putInt("noti_interval", user.term)
         editor.putInt("noti_time", user.timezone)
+        editor.putInt("manner_temp", user.manner_temp)
         editor.apply()
     }
 
@@ -41,10 +44,11 @@ class SharedPreferencesUtil(context: Context) {
         val id = preferences.getString("id", "")
         return if (id != "") {
             val type = preferences.getString("type", "비회원")
+            val token = getFCMToken()
 
-            User(id!!, type!!)
+            User(id!!, type!!, token)
         } else {
-            User("", "비회원")
+            User("", "비회원", "")
         }
     }
 
@@ -57,6 +61,7 @@ class SharedPreferencesUtil(context: Context) {
             editor.putInt("noti_first", user.nday)
             editor.putInt("noti_interval", user.term)
             editor.putInt("noti_time", user.timezone)
+            editor.putInt("manner_temp", user.manner_temp)
             editor.apply()
         }
     }
@@ -70,9 +75,11 @@ class SharedPreferencesUtil(context: Context) {
             val notiFirst = preferences.getInt("noti_first", 1)
             val notiInterval = preferences.getInt("noti_interval", 1)
             val notiTime = preferences.getInt("noti_time", 1)
-            User(id!!, type!!, alarm, notiFirst, notiInterval, notiTime)
+            val mannerTemp = preferences.getInt("manner_temp", 1)
+            val token = getFCMToken()
+            User(id!!, type!!, notiFirst, alarm, mannerTemp, notiInterval, notiTime, token)
         } else {
-            User("", "비회원")
+            User("", "비회원", "")
         }
     }
 
@@ -80,6 +87,47 @@ class SharedPreferencesUtil(context: Context) {
     fun deleteUser() {
         val editor = preferences.edit()
         editor.clear()
+        editor.apply()
+    }
+
+    // 최근에 저장된 MMS date
+    fun getLatelyMMSDate(): String{
+        val dateStr = preferences.getString("lastMMSDate", "")
+        return dateStr!!
+    }
+
+    // MMS date update
+    fun setMMSDate(date: String){
+        val editor = preferences.edit()
+        editor.putString("lastMMSDate", date)
+        editor.apply()
+    }
+
+    // Last gallery update date
+    fun getLatelyGalleryInfo(): Gallery {
+        val date = preferences.getLong("lastGalleryDate", -1)
+        val imgCnt = preferences.getInt("lastGalleryImgCnt", 0)
+        return Gallery(date, imgCnt)
+    }
+
+    // Gallery update date
+    fun setGalleryInfo(imgInfo: Gallery){
+        val editor = preferences.edit()
+        editor.putLong("lastGalleryDate", imgInfo.date)
+        editor.putInt("lastGalleryImgCnt", imgInfo.imgCnt)
+        editor.apply()
+    }
+
+    // FCM Token 가져오기
+    fun getFCMToken(): String{
+        val token = preferences.getString("fcmToken", "")
+        return token!!
+    }
+
+    // FCM Token 저장하기
+    fun setFCMToken(token: String){
+        val editor = preferences.edit()
+        editor.putString("fcmToken", token)
         editor.apply()
     }
 }

@@ -42,3 +42,21 @@ data class UpdateRequest(
 data class DeleteRequest(
     val barcodeNum: String
 )
+
+data class DonateRequest(
+    val barcodeNum: String,
+    var x: String,
+    var y: String
+)
+
+data class FindPresentRequest(
+    val x: String,
+    val y: String
+)
+
+data class GetPresentRequest(
+    val barcodeNum: String,
+    val message: String,
+    val x: String,
+    val y: String
+)

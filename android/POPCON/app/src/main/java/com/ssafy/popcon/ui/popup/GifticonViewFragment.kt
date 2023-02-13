@@ -2,6 +2,7 @@ package com.ssafy.popcon.ui.popup
 
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -44,10 +45,19 @@ class GifticonViewFragment : Fragment() {
         useBtnListener()
     }
 
-    private fun makeGifticon() : UpdateRequest {
+    private fun makeGifticon(): UpdateRequest {
 
-        return UpdateRequest(gifticonInfo!!.barcodeNum, gifticonInfo!!.brand!!.brandName, gifticonInfo!!.due, gifticonInfo!!.memo,
-            gifticonInfo!!.price ?: -1, gifticonInfo!!.productName, SharedPreferencesUtil(requireContext()).getUser().email!!, SharedPreferencesUtil(requireContext()).getUser().social, gifticonInfo!!.state)
+        return UpdateRequest(
+            gifticonInfo!!.barcodeNum,
+            gifticonInfo!!.brand!!.brandName,
+            gifticonInfo!!.due,
+            gifticonInfo!!.memo,
+            gifticonInfo!!.price ?: -1,
+            gifticonInfo!!.productName,
+            SharedPreferencesUtil(requireContext()).getUser().email!!,
+            SharedPreferencesUtil(requireContext()).getUser().social,
+            gifticonInfo!!.state
+        )
     }
 
     //사용완료 버튼 리스너
@@ -65,14 +75,17 @@ class GifticonViewFragment : Fragment() {
     @RequiresApi(Build.VERSION_CODES.O)
     private fun setLayout() {
         binding.gifticon = gifticonInfo
+        Log.d("TAG", "setLayout: $gifticonInfo")
         if (gifticonInfo?.price == -1) {
             binding.btnUse.isVisible = true
             binding.btnPrice.isVisible = false
             binding.tvLeft.isVisible = false
+            binding.tvLeftTitle.isVisible = false
         } else {
             binding.btnUse.isVisible = false
             binding.btnPrice.isVisible = true
             binding.tvLeft.isVisible = true
+            binding.tvLeftTitle.isVisible = true
         }
 
         binding.btnPrice.setOnClickListener {
@@ -107,5 +120,9 @@ class GifticonViewFragment : Fragment() {
             fragment.arguments = args
             return fragment
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
     }
 }

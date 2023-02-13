@@ -23,18 +23,37 @@ class MapViewModel(
     private var _store = MutableLiveData<List<Store>>()
     val store: LiveData<List<Store>> = _store
 
+    //상단 브랜드 리스트
     private val _brandsMap = MutableLiveData<List<BrandResponse>>()
     val brandsMap: LiveData<List<BrandResponse>> = _brandsMap
+
+    private val _present = MutableLiveData<GifticonResponse>()
+    val present: LiveData<GifticonResponse> = _present
+
+    //현재 선택된 탭
+    var brandName: String = "전체"
+
+    //주변 선물 리스트
+    private val _presents = MutableLiveData<List<Present>>()
+    val presents: LiveData<List<Present>> = _presents
+
+    //주울 수 있는 선물 리스트
+
+    private val _presentsNear = MutableLiveData<List<Present>>()
+    val presentsNear: LiveData<List<Present>> = _presentsNear
 
     fun getStoreInfo(storeRequest: StoreRequest) {
         viewModelScope.launch {
             _store.value = mapRepository.getStoreByLocation(storeRequest)
+            brandName = "전체"
         }
     }
 
     fun getStoreByBrand(storeByBrandRequest: StoreByBrandRequest) {
         viewModelScope.launch {
+            Log.d("TAG", "getStoreByBrand: $brandName")
             _store.value = mapRepository.getStoreByBrand(storeByBrandRequest)
+            brandName = storeByBrandRequest.brandName
         }
     }
 
@@ -70,6 +89,40 @@ class MapViewModel(
             val gifticons = gifticonRepository.getGifticonByUser(user)
 
             _mapGifticon.value = gifticons
+        }
+    }
+
+    fun getAllPresents(findPresentRequest: FindPresentRequest) {
+        viewModelScope.launch {
+            val presents = mapRepository.getPresents(findPresentRequest)
+            _presents.value = presents.allNearPresentList
+            _presentsNear.value = presents.gettablePresentList
+        }
+    }
+
+    fun donate(donateRequest: DonateRequest, user: User, x: String, y: String) {
+        viewModelScope.launch {
+            mapRepository.donate(donateRequest)
+            getAllPresents(FindPresentRequest(x, y))
+            getGifticons(user, brandName)
+            getHomeBrand(user)
+        }
+    }
+
+    //줍기
+    fun getPresent(getPresentRequest: GetPresentRequest, user: User) {
+        viewModelScope.launch {
+            mapRepository.getPresent(getPresentRequest)
+            getAllPresents(FindPresentRequest(getPresentRequest.x, getPresentRequest.y))
+            getGifticons(user, brandName)
+            getHomeBrand(user)
+        }
+    }
+
+    fun getGifticonByBarcodeNum(barcodeNum: String) {
+        viewModelScope.launch {
+            _present.value = gifticonRepository.getGifticonByBarNum(barcodeNum)
+            Log.d("ㅇㅅㅇ", "getGifticonByBarcodeNum: ${_present.value}")
         }
     }
 }
